@@ -1,0 +1,69 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { Roles } from 'src/auth/decorator/role.decorator';
+import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { RolesGuard } from 'src/auth/guards/role.guard';
+import { multerOptions } from 'src/common/utils';
+import { RoleType } from 'src/user/role-type';
+import { AddProductDto } from './dto/AddProduct.dto';
+import { ProductService } from './product.service';
+
+@Controller('product')
+export class ProductController {
+  constructor(private productService: ProductService) {}
+
+  //상품 추가
+  @Post('addProduct')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleType.SELLER)
+  @UseInterceptors(FilesInterceptor('img', 10, multerOptions('products')))
+  async addProduct(
+    @UploadedFile() img: Express.Multer.File,
+    @Body() addProductDto: AddProductDto,
+  ) {
+    addProductDto.imgUrl = img.path;
+    return await this.productService.addProduct(addProductDto);
+  }
+
+  //상품 리스트
+  @Get('list')
+  async getProductList() {
+    return await this.productService.getProducts();
+  }
+
+  //상품 찾기
+  @Get('/searchByNameInAll')
+  async searchProductByName(@Param('name') name: string) {
+    return await this.searchProductByName(name);
+  }
+
+  @Get('/searchByNameAndCategory')
+  async searchByNameAndCategory(
+    @Param('name') name: string,
+    @Param('category') category: string,
+  ) {
+    return await this.searchByNameAndCategory(name, category);
+  }
+
+  //상품 카테고리로 찾기
+  @Get('/findbycate')
+  async getCategoryProductList(@Param('category') category: string) {
+    return await this.productService.findAllProductsByCategory(category);
+  }
+
+  //상품
+  @Get('/getOneProduct')
+  async getOneProduct(@Param('id') id: number) {
+    return await this.productService.getOneProduct(id);
+  }
+}
