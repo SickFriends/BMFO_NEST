@@ -13,7 +13,7 @@ import { TokenRepository } from './repository/token.repository';
 import { UserService } from 'src/user/user.service';
 import { Token } from './entity/token.entity';
 import { randomBytes } from 'crypto';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -76,6 +76,16 @@ export class AuthService {
       token,
     };
   }
+
+  public async logout(res: Response) {
+    res.cookie('accessToken', '', {
+      maxAge: 0,
+    });
+    res.cookie('refreshToken', '', {
+      maxAge: 0,
+    });
+  }
+
   private async createToken(userId: number): Promise<Token> {
     const refreshToken = new Token();
     refreshToken.token = randomBytes(64).toString('hex');
