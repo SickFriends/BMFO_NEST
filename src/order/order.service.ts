@@ -38,7 +38,6 @@ export class OrderService {
       orderId,
       lockerPass,
     );
-    console.log(assignedLocker);
     newOrder.lockerId = assignedLocker.lockerId; //어디 라커에 배정받았었는지 확인하기위한 용도..
     await Promise.all(
       userBasket.map((productInfo) => {
@@ -63,5 +62,45 @@ export class OrderService {
       }
     });
     return this.orderRepository.save(newOrder);
+  }
+
+  public async successedOrder(orderId: string) {
+    const order: Order = await this.orderRepository.findOne(
+      { orderId },
+      { relations: ['assignedLocker'] },
+    );
+    if (!order) {
+      throw new HttpException(
+        '잘못된 접근입니다 (존재하지 않는 주문서)',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+    if (order.assignedLocker.orderId !== orderId) {
+      this.rejectOrder(orderId);
+      throw new HttpException(
+        '결제 시간이 지났습니다 (결제를 취소합니다)',
+        HttpStatus.GATEWAY_TIMEOUT,
+      );
+    }
+
+    // + HTTP 요청으로 토스로 결제가 잘 되었는지 조회한다
+
+    // 잘 조회가 된다면 해당 주문서에 isApprove를 true로 바꾼다.
+    await this.orderRepository.update(
+      {
+        orderId,
+      },
+      {
+        isApprove: true,
+      },
+    );
+
+    // ++ 판매자에게 구매목록을 소켓으로 보내준다.
+  }
+
+  public async failedOrder() {}
+
+  public async rejectOrder(orderId: string) {
+    //+ HTTP 요청으로 토스 결제를 취소한다
   }
 }

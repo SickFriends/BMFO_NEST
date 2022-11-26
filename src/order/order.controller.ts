@@ -26,11 +26,7 @@ export class OrderController {
   }
   //토스에서 결제가 성공했을 때 사용하는 API 이다.
   @Post('/purchaseSuccess')
-  public async purchaseSuccessed() {
-    // + 주문서의 사물함이 그대로 내주문을 가지고 있고 (주문서의 사물함의 orderId가 주문서의 주문아이디와 같고), 주문서의 사물함의 사용중이 그대로라면 (isUsing이 true으로 되어있다면)
-    // + 해당 주문서에 isApprove를 true로 바꾼다.  나중에 판매자에게 구매목록을 소켓으로 보내준다.
-    // + 아니라면 결제 취소를 진행한다.  +혹시 실행되지 않았을 스케줄러를 취소한다. + 해당 주문서의 사물함을 returnLocker한다.
-  }
+  public async purchaseSuccessed() {}
   //토스에서 결제가 실패했을 때 사용하는 API 이다.
   @Post('/purchaseFail')
   public async purchaseFailed() {
