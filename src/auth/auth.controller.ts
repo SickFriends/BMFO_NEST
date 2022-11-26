@@ -25,6 +25,7 @@ import { User } from 'src/user/entity/user.entity';
 @Controller('/auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
+
   @Post('/signup')
   @UsePipes(ValidationPipe)
   async registerAccount(
@@ -39,6 +40,7 @@ export class AuthController {
     @Body() userDto: UserLoginDto,
     @Req() req: Request,
   ): Promise<any> {
+    console.log(userDto);
     return await this.authService.login(req, userDto);
   }
 
@@ -48,7 +50,7 @@ export class AuthController {
     await this.authService.logout(res);
   }
 
-  @Post('/getUser')
+  @Get('/getUser')
   @UseGuards(AuthGuard)
   isAuthenticated(@GetUser() user: User): User {
     return user;

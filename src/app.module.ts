@@ -10,6 +10,8 @@ import { UserService } from './user/user.service';
 import { UserModule } from './user/user.module';
 import { ProductModule } from './product/product.module';
 import { BasketModule } from './basket/basket.module';
+import { LockerModule } from './locker/locker.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { BasketModule } from './basket/basket.module';
     UserModule,
     ProductModule,
     BasketModule,
+    LockerModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

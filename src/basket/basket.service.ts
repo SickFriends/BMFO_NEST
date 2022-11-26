@@ -46,6 +46,7 @@ export class BasketService {
         });
       }),
     );
+    console.log(resProducts);
     return resProducts;
   }
 

@@ -32,13 +32,17 @@ export class AuthService {
     let userFind: User = await this.userService.findByFields({
       where: { username: userLoginDto.username },
     });
+    console.log('dd1');
     if (!userFind) {
+      console.log('dd2');
       throw new UnauthorizedException('아이디가 잘못되었습니다');
     }
+    console.log('dd3');
     await this.userService.verifyPassword(
       userLoginDto.password,
       userFind.password,
     );
+    console.log('dd4');
     console.log(userFind);
     const token = this.jwtService.sign(
       { ...userFind },
