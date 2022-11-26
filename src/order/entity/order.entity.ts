@@ -4,18 +4,21 @@ import {
   BaseEntity,
   Column,
   Entity,
+  Generated,
   JoinColumn,
   ManyToOne,
   OneToMany,
   OneToOne,
+  PrimaryColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { OrderedProduct } from './orderedProduct.entity';
 
 @Entity()
 export class Order extends BaseEntity {
-  @PrimaryGeneratedColumn()
-  orderId: number;
+  @PrimaryColumn({ type: 'uuid' })
+  @Generated('uuid')
+  orderId: string;
 
   @OneToMany((type) => OrderedProduct, (orderedProduct) => orderedProduct.order)
   orderedProducts: OrderedProduct[];
@@ -23,7 +26,9 @@ export class Order extends BaseEntity {
   @Column() //총 가격
   amount: number;
 
-  @Column()
+  @Column({
+    default: false,
+  })
   isApprove: boolean;
 
   @Column()
@@ -35,4 +40,7 @@ export class Order extends BaseEntity {
 
   @OneToOne((type) => Locker, (locker) => locker.assignedOrder)
   assignedLocker: Locker;
+
+  @Column()
+  orderedAt: Date;
 }

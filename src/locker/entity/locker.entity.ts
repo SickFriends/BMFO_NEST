@@ -12,10 +12,14 @@ import {
 export class Locker extends BaseEntity {
   @PrimaryColumn()
   lockerId: number;
-  @Column()
+
+  @Column({
+    default: false,
+  })
   isUsing: boolean;
+
   @Column()
-  orderId: number;
+  orderId: string;
 
   @OneToOne((type) => Order, (order) => order.assignedLocker)
   @JoinColumn({ name: 'orderId' })

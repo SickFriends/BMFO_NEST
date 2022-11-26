@@ -9,14 +9,16 @@ import { BasketService } from './basket.service';
 import { PutProductRequestDto } from './dto/PutProductRequest.dto';
 
 @Controller('basket')
-@UseGuards(AuthGuard) //로그인이 되어있어야 사용가능하고
-// @Roles(RoleType.CUSTOMER) // 커스터머만 사용할 수 있다.
+@UseGuards(AuthGuard, RolesGuard) //로그인이 되어있어야 사용가능하고
+@Roles(RoleType.CUSTOMER) // 커스터머만 사용할 수 있다.
 export class BasketController {
   constructor(private basketService: BasketService) {}
+
   @Get('/getShoppingBasket')
   public async getMyShoppingBasket(@GetUser() user: User) {
     return await this.basketService.getShoppingBasket(user);
   }
+
   @Post('/putProduct')
   public async putProduct(
     @GetUser() user: User,

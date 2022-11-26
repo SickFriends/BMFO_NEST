@@ -1,5 +1,6 @@
 import { Product } from 'src/product/entity/product.entity';
 import {
+  BaseEntity,
   Column,
   Entity,
   JoinColumn,
@@ -10,12 +11,12 @@ import {
 import { Order } from './order.entity';
 
 @Entity()
-export class OrderedProduct {
+export class OrderedProduct extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  productName: number;
+  productName: string;
 
   @Column()
   productPrice: number;
@@ -24,8 +25,9 @@ export class OrderedProduct {
   count: number;
 
   @Column()
-  orderId: number;
+  orderId: string;
 
   @ManyToOne((type) => Order, (order) => order.orderedProducts)
+  @JoinColumn({ name: 'orderId' })
   order: Order;
 }
