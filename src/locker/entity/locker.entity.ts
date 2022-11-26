@@ -4,6 +4,7 @@ import {
   Column,
   Entity,
   JoinColumn,
+  OneToMany,
   OneToOne,
   PrimaryColumn,
 } from 'typeorm';
@@ -18,10 +19,17 @@ export class Locker extends BaseEntity {
   })
   isUsing: boolean;
 
-  @Column()
+  @Column({
+    nullable: true,
+  })
   orderId: string;
 
-  @OneToOne((type) => Order, (order) => order.assignedLocker)
-  @JoinColumn({ name: 'orderId' })
-  assignedOrder: Order;
+  @Column({
+    select: false,
+    default: '',
+  })
+  password: string;
+
+  @OneToMany((type) => Order, (order) => order.assignedLocker)
+  assignedOrders: Order[];
 }

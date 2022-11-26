@@ -6,15 +6,12 @@ import {
 } from '@nestjs/common';
 import { User } from 'src/user/entity/user.entity';
 import { Locker } from './entity/locker.entity';
-import { LockerPass } from './entity/LockerPass.entity';
 import { LockerRepository } from './repository/locker.repository';
-import { LockerPassRepository } from './repository/lockerPass.repository';
 
 @Injectable()
 export class LockerService {
   constructor(
     private lockerRepository: LockerRepository,
-    private lockerPassRepository: LockerPassRepository,
     private readonly httpService: HttpService,
   ) {}
 
@@ -41,64 +38,44 @@ export class LockerService {
     return;
   }
 
-  public async setLockerPass(user: User, lockerPass: string): Promise<void> {
-    const findedLockerPass: LockerPass =
-      await this.lockerPassRepository.findOne({ userId: user.userId });
-    if (findedLockerPass) {
-      await this.lockerPassRepository.update(
-        {
-          lockerPassword: lockerPass,
-        },
-        {
-          userId: user.userId,
-        },
-      );
-      return;
-    }
-    await this.lockerPassRepository.save({
-      lockerPassword: lockerPass,
-    });
-    return;
-  }
-
-  public async getLockerPass(userId: number) {
-    const lockerPass = await this.lockerPassRepository.findOne({
-      where: { userId: userId },
+  public async getLockerPass(lockerId: number) {
+    const lockerPass = await this.lockerRepository.findOne({
+      where: { lockerId },
     });
     if (!lockerPass) {
-      throw new HttpException(
-        'locker Password를 찾을 수 없습니다',
-        HttpStatus.NOT_FOUND,
-      );
+      return null;
     }
-    return lockerPass.lockerPassword;
+    return lockerPass.password;
   }
 
   private async checkLockerPass(lockerId: number, password: string) {
     const locker: Locker = await this.lockerRepository.findOne(lockerId, {
+      select: ['password'],
       relations: ['assignedOrder'],
     });
-    if (!locker.assignedOrder) {
+    if (!locker.isUsing) {
       //이 때, 현재 맡겨놓은 물건이 없는 라커이다.
       throw new HttpException(
         '현재 활성화 되지 않은 라커입니다',
         HttpStatus.BAD_GATEWAY,
       );
     }
-    const lockerPassword = await this.getLockerPass(
-      locker.assignedOrder.userId,
-    );
+    const lockerPassword = await this.getLockerPass(locker.lockerId);
     if (lockerPassword === password) {
       return true;
     } else {
-      false;
+      return false;
     }
   }
 
-  public async assignLocker(orderId: string) {
+  public async assignLocker(
+    orderId: string,
+    password: string,
+  ): Promise<Locker> {
     const lockers: Locker[] = await this.lockerRepository.find({
       isUsing: false,
     });
+
     if (lockers.length === 0) {
       throw new HttpException(
         '사물함을 배정할 수 없습니다',
@@ -107,17 +84,20 @@ export class LockerService {
     }
     await this.lockerRepository.update(
       {
-        orderId,
-        isUsing: true,
+        lockerId: lockers[0].lockerId,
       },
       {
-        lockerId: lockers[0].lockerId,
+        orderId,
+        isUsing: true,
+        password,
       },
     );
 
-    // + 스케줄러로 1분 뒤에도, order를 확인해서 isApprove가 false 라면 (결제가 되지 않았다면) isUsing을 false로 바꾸고, orderId를 삭제한다.
-
-    lockers[0].isUsing = true;
-    return lockers[0];
+    // + 스케줄러로 5분 뒤에, order를 확인해서 isApprove가 false 라면 (결제가 되지 않았다면) isUsing을 false로 바꾸고, orderId를 삭제하고 password도 삭제한다.
+    return await this.lockerRepository.findOne({
+      where: {
+        lockerId: lockers[0].lockerId,
+      },
+    });
   }
 }

@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { BasketService } from 'src/basket/basket.service';
 import { Basket } from 'src/basket/entity/basket.entity';
 import { Locker } from 'src/locker/entity/locker.entity';
@@ -16,7 +17,8 @@ export class OrderService {
     private lockerService: LockerService,
     private basketService: BasketService,
   ) {}
-  public async purchase(user: User) {
+  //주문서를 만드는 메서드이다
+  public async purchase(user: User, lockerPass: string) {
     const userBasket = await this.basketService.getShoppingBasket(user);
     if (!userBasket.length) {
       throw new HttpException(
@@ -24,17 +26,22 @@ export class OrderService {
         HttpStatus.BAD_GATEWAY,
       );
     }
+
     let totalPrice = 0;
+    const orderId = randomUUID();
     const newOrder = new Order();
     newOrder.orderedAt = new Date();
     newOrder.userId = user.userId;
+    newOrder.orderId = orderId;
     const assignedLocker: Locker = await this.lockerService.assignLocker(
-      newOrder.orderId,
+      orderId,
+      lockerPass,
     );
+    console.log(assignedLocker);
     newOrder.lockerId = assignedLocker.lockerId; //어디 라커에 배정받았었는지 확인하기위한 용도..
     await Promise.all(
-      userBasket.map(async (productInfo) => {
-        await this.orderedProductRepository.save({
+      userBasket.map((productInfo) => {
+        this.orderedProductRepository.save({
           orderId: newOrder.orderId,
           productName: productInfo.product.name,
           productPrice: productInfo.product.price,

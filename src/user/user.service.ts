@@ -15,10 +15,7 @@ import { LockerService } from 'src/locker/locker.service';
 
 @Injectable()
 export class UserService {
-  constructor(
-    private userRepository: UserRepository,
-    private lockerService: LockerService,
-  ) {}
+  constructor(private userRepository: UserRepository) {}
 
   async findByFields(options: FindOneOptions): Promise<User | undefined> {
     return await this.userRepository.findOne(options);
@@ -46,8 +43,6 @@ export class UserService {
     nUser.username = registerDto.username;
     nUser.password = registerDto.password;
     nUser.save();
-    // 새로 가입한 고객의 라커 비밀번호는 1111로 설정해둔다.
-    await this.lockerService.setLockerPass(nUser, '1111');
     return nUser;
   }
 

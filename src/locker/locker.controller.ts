@@ -11,25 +11,6 @@ import { LockerService } from './locker.service';
 export class LockerController {
   constructor(private lockerService: LockerService) {}
 
-  //고객이 자신이 설정했던 비밀번호를 보는 API이다.
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleType.CUSTOMER)
-  @Get('/getMyLockerPass')
-  public async getMyLockerPass(@GetUser() user: User) {
-    return await this.lockerService.getLockerPass(user.userId);
-  }
-
-  // 고객이 라커 비밀번호를 설정할 때 사용하는 API이다.
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleType.CUSTOMER)
-  @Post('/setMyLockerPass')
-  public async setMyLockerPass(
-    @GetUser() user: User,
-    @Body('lockerPass') lockerPass: string,
-  ): Promise<void> {
-    await this.lockerService.setLockerPass(user, lockerPass);
-  }
-
   //판매자가 상품을 제공하기 위해 또는 특정한 이유로 라커문을 여는 경우에 사용하는 API이다.
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.SELLER)

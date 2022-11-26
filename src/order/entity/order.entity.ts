@@ -16,8 +16,7 @@ import { OrderedProduct } from './orderedProduct.entity';
 
 @Entity()
 export class Order extends BaseEntity {
-  @PrimaryColumn({ type: 'uuid' })
-  @Generated('uuid')
+  @PrimaryColumn()
   orderId: string;
 
   @OneToMany((type) => OrderedProduct, (orderedProduct) => orderedProduct.order)
@@ -38,7 +37,11 @@ export class Order extends BaseEntity {
   @JoinColumn({ name: 'userId' })
   orderer: User;
 
-  @OneToOne((type) => Locker, (locker) => locker.assignedOrder)
+  @Column()
+  lockerId: number;
+
+  @ManyToOne((type) => Locker, (locker) => locker.assignedOrders)
+  @JoinColumn({ name: 'lockerId' })
   assignedLocker: Locker;
 
   @Column()

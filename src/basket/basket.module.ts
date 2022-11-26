@@ -12,7 +12,7 @@ import { BasketProductRepository } from './repository/basketProduct.repository';
     ProductModule,
   ],
   controllers: [BasketController],
-  exports: [],
+  exports: [TypeOrmModule, BasketService],
   providers: [BasketService],
 })
 export class BasketModule {}

@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { Roles } from 'src/auth/decorator/role.decorator';
 import { GetUser } from 'src/auth/decorator/userinfo.decorator';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -17,9 +17,12 @@ export class OrderController {
   //커스터머가 상품들을 주문할 때 사용하는 API 이다.
   @Post('/purchase')
   @Roles(RoleType.CUSTOMER)
-  public async purchase(@GetUser() user: User) {
+  public async purchase(
+    @GetUser() user: User,
+    @Body('password') password: string,
+  ) {
     //매점 운영 시간 확인도 하기
-    return await this.orderService.purchase(user);
+    return await this.orderService.purchase(user, password);
   }
   //토스에서 결제가 성공했을 때 사용하는 API 이다.
   @Post('/purchaseSuccess')
