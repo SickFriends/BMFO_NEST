@@ -1,5 +1,12 @@
 import { Order } from 'src/order/entity/order.entity';
-import { BaseEntity, Column, Entity, OneToOne, PrimaryColumn } from 'typeorm';
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryColumn,
+} from 'typeorm';
 
 @Entity()
 export class Locker extends BaseEntity {
@@ -11,5 +18,6 @@ export class Locker extends BaseEntity {
   orderId: number;
 
   @OneToOne((type) => Order, (order) => order.assignedLocker)
+  @JoinColumn({ name: 'orderId' })
   assignedOrder: Order;
 }

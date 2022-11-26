@@ -1,5 +1,6 @@
 import { Token } from 'src/auth/entity/token.entity';
 import { Basket } from 'src/basket/entity/basket.entity';
+import { Order } from 'src/order/entity/order.entity';
 import {
   BaseEntity,
   Column,
@@ -43,6 +44,9 @@ export class User extends BaseEntity {
     cascade: true,
   })
   refereshTokens: Token[];
+
+  @OneToMany((type) => Order, (order) => order.orderer)
+  orders: Order[];
 
   @OneToOne((type) => Basket, (basket) => basket.user)
   basket: Basket;

@@ -1,8 +1,11 @@
 import { Locker } from 'src/locker/entity/locker.entity';
+import { User } from 'src/user/entity/user.entity';
 import {
   BaseEntity,
   Column,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -25,6 +28,10 @@ export class Order extends BaseEntity {
 
   @Column()
   userId: number;
+
+  @ManyToOne((type) => User, (user) => user.orders)
+  @JoinColumn({ name: 'userId' })
+  orderer: User;
 
   @OneToOne((type) => Locker, (locker) => locker.assignedOrder)
   assignedLocker: Locker;
