@@ -7,12 +7,14 @@ import { OrderedProductRepository } from './repository/orderProduct.repository';
 import { LockerModule } from 'src/locker/locker.module';
 import { BasketModule } from 'src/basket/basket.module';
 import { LockerService } from 'src/locker/locker.service';
+import { TaskModule } from 'src/task/task.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([OrderRepository, OrderedProductRepository]),
     LockerModule,
     BasketModule,
+    TaskModule,
   ],
   providers: [OrderService],
   controllers: [OrderController],

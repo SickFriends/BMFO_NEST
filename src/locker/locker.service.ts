@@ -34,6 +34,7 @@ export class LockerService {
 
   public async getLockerPass(lockerId: number) {
     const lockerPass = await this.lockerRepository.findOne({
+      select: ['password'],
       where: { lockerId },
     });
     if (!lockerPass) {
@@ -104,4 +105,6 @@ export class LockerService {
       },
     });
   }
+
+  //locker detail, locker history..
 }

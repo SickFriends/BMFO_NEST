@@ -4,6 +4,7 @@ import { BasketService } from 'src/basket/basket.service';
 import { Basket } from 'src/basket/entity/basket.entity';
 import { Locker } from 'src/locker/entity/locker.entity';
 import { LockerService } from 'src/locker/locker.service';
+import { TaskService } from 'src/task/task.service';
 import { User } from 'src/user/entity/user.entity';
 import { Order } from './entity/order.entity';
 import { OrderRepository } from './repository/order.repository';
@@ -16,6 +17,7 @@ export class OrderService {
     private orderedProductRepository: OrderedProductRepository,
     private lockerService: LockerService,
     private basketService: BasketService,
+    private taskService: TaskService,
   ) {}
   //주문서를 만드는 메서드이다
   public async purchase(user: User, lockerPass: string) {
@@ -51,6 +53,15 @@ export class OrderService {
     );
     newOrder.amount = totalPrice;
     newOrder.isApprove = false;
+
+    this.taskService.addNewTimeout(`lockerFor${orderId}`, 180000, async () => {
+      //현재 오더가 approve가 되었는지 확인한다.
+      //approve가 되지 않았다면
+      const order = await this.orderRepository.findOne({ orderId });
+      if (!order.isApprove) {
+        await this.lockerService.returnLocker(order.lockerId);
+      }
+    });
     return this.orderRepository.save(newOrder);
   }
 }

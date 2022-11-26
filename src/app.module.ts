@@ -12,6 +12,9 @@ import { ProductModule } from './product/product.module';
 import { BasketModule } from './basket/basket.module';
 import { LockerModule } from './locker/locker.module';
 import { OrderModule } from './order/order.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ScheduleModule } from './schedule/schedule.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { OrderModule } from './order/order.module';
     BasketModule,
     LockerModule,
     OrderModule,
+    ScheduleModule.forRoot(),
+    ScheduleModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],
