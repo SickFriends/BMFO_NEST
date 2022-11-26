@@ -17,10 +17,6 @@ export class OrderService {
     private basketService: BasketService,
   ) {}
   public async purchase(user: User) {
-    //1. 매점시간 확인
-    //2. 사물함 배정
-    const assignedLocker: Locker = await this.lockerService.assignLocker();
-    //3. 장바구니 순회 후
     const userBasket = await this.basketService.getShoppingBasket(user);
     if (!userBasket.length) {
       throw new HttpException(
@@ -32,7 +28,10 @@ export class OrderService {
     const newOrder = new Order();
     newOrder.orderedAt = new Date();
     newOrder.userId = user.userId;
-    newOrder.lockerId = assignedLocker.lockerId;
+    const assignedLocker: Locker = await this.lockerService.assignLocker(
+      newOrder.orderId,
+    );
+    newOrder.lockerId = assignedLocker.lockerId; //어디 라커에 배정받았었는지 확인하기위한 용도..
     await Promise.all(
       userBasket.map(async (productInfo) => {
         await this.orderedProductRepository.save({
@@ -46,6 +45,6 @@ export class OrderService {
     );
     newOrder.amount = totalPrice;
     newOrder.isApprove = false;
-    return newOrder.save();
+    return this.orderRepository.save(newOrder);
   }
 }
