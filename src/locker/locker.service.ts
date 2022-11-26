@@ -25,17 +25,11 @@ export class LockerService {
     if (isSame) {
       //라즈베리 파이 플라스크 서버에 오픈을 요청한다.
       this.httpService.post('http://10.150.149.50/open', {});
-
-      await this.lockerRepository.update(
-        { isUsing: false },
-        {
-          lockerId,
-        },
-      );
+      await this.returnLocker(lockerId);
       return true;
     }
     //비밀번호가 맞지 않다면...
-    return;
+    return false;
   }
 
   public async getLockerPass(lockerId: number) {
@@ -63,9 +57,17 @@ export class LockerService {
     const lockerPassword = await this.getLockerPass(locker.lockerId);
     if (lockerPassword === password) {
       return true;
-    } else {
-      return false;
     }
+    return false;
+  }
+
+  public async returnLocker(lockerId: number) {
+    await this.lockerRepository.update(
+      { isUsing: false, password: '', orderId: null },
+      {
+        lockerId,
+      },
+    );
   }
 
   public async assignLocker(
@@ -93,8 +95,10 @@ export class LockerService {
       },
     );
 
-    // + 스케줄러로 5분 뒤에, order를 확인해서 isApprove가 false 라면 (결제가 되지 않았다면) isUsing을 false로 바꾸고, orderId를 삭제하고 password도 삭제한다.
+    // + 스케줄러로 5분 뒤에, order를 확인해서 isApprove가 false 라면 returnLocker(lockerId) 한다.
+
     return await this.lockerRepository.findOne({
+      select: ['lockerId', 'isUsing'],
       where: {
         lockerId: lockers[0].lockerId,
       },

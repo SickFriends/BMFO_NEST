@@ -26,7 +26,6 @@ export class OrderService {
         HttpStatus.BAD_GATEWAY,
       );
     }
-
     let totalPrice = 0;
     const orderId = randomUUID();
     const newOrder = new Order();

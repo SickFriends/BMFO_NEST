@@ -27,4 +27,10 @@ export class LockerController {
   ) {
     return await this.lockerService.openForCustomer(lockerId, lockerPassword);
   }
+
+  //사물함 정보들을 불러오는 API이다.
+  @Get('')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
+  public async getLockers() {}
 }

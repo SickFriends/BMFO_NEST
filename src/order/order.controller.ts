@@ -34,11 +34,9 @@ export class OrderController {
   //토스에서 결제가 실패했을 때 사용하는 API 이다.
   @Post('/purchaseFail')
   public async purchaseFailed() {
-    // + 해당 주문서에 isApprove를 false로 바꾼다.
-    // + 해당 주문서의 사물함의 isUsing을 false로 바꾼다.
-    // + 해당 주문서의 사물함의 orderId를 null로 비운다.
+    // + 해당 주문서에 isApprove를 false로 바꾼다. + 혹시 실행되지 않았을 스케줄러를 취소한다.
+    // + 해당 주문서의 사물함을 returnLocker한다.
   }
-
   //판매자가 결제 취소 할 때 사용하는 API 이다.
   @Post('/rejectPurchase')
   @Roles(RoleType.SELLER)
