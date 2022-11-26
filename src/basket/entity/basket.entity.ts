@@ -16,6 +16,9 @@ export class Basket extends BaseEntity {
   @PrimaryGeneratedColumn()
   basketId: number;
 
+  @Column()
+  userId: number;
+
   @OneToOne((type) => User, (user) => user.basket, {
     eager: true,
   })

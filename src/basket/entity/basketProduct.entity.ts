@@ -27,9 +27,7 @@ export class BasketProduct {
   @Column()
   productId: number;
 
-  @ManyToMany((type) => Product, (product) => product.basketProducts, {
-    eager: true,
-  })
+  @ManyToOne((type) => Product, (product) => product.basketProducts)
   @JoinColumn({ name: 'productId' })
   product: Product;
 }
