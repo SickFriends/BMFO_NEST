@@ -1,4 +1,11 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BasketProduct } from 'src/basket/entity/basketProduct.entity';
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class Product extends BaseEntity {
@@ -16,4 +23,7 @@ export class Product extends BaseEntity {
 
   @Column()
   price: number;
+
+  @OneToMany((type) => BasketProduct, (basketProduct) => basketProduct.product)
+  basketProducts: BasketProduct[];
 }

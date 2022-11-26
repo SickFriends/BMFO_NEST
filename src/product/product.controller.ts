@@ -6,6 +6,7 @@ import {
   Post,
   Query,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -21,17 +22,16 @@ import { ProductService } from './product.service';
 @Controller('product')
 export class ProductController {
   constructor(private productService: ProductService) {}
-
   //상품 추가
   @Post('addProduct')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.SELLER)
-  @UseInterceptors(FilesInterceptor('img', 10, multerOptions('products')))
+  @UseInterceptors(FilesInterceptor('img', 1, multerOptions('products')))
   async addProduct(
-    @UploadedFile() img: Express.Multer.File,
+    @UploadedFiles() img: Express.Multer.File[],
     @Body() addProductDto: AddProductDto,
   ) {
-    addProductDto.imgUrl = img.path;
+    addProductDto.imgUrl = img[0].filename;
     return await this.productService.addProduct(addProductDto);
   }
 
@@ -43,8 +43,9 @@ export class ProductController {
 
   //상품 찾기
   @Get('/searchByNameInAll')
-  async searchProductByName(@Param('name') name: string) {
-    return await this.searchProductByName(name);
+  async searchProductByName(@Query('name') name: string) {
+    console.log(name);
+    return await this.productService.searchByNameInAll(name);
   }
 
   @Get('/searchByNameAndCategory')
@@ -57,7 +58,7 @@ export class ProductController {
 
   //상품 카테고리로 찾기
   @Get('/findbycate')
-  async getCategoryProductList(@Param('category') category: string) {
+  async getCategoryProductList(@Query('category') category: string) {
     return await this.productService.findAllProductsByCategory(category);
   }
 

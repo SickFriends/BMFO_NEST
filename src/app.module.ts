@@ -9,8 +9,7 @@ import { UserController } from './user/user.controller';
 import { UserService } from './user/user.service';
 import { UserModule } from './user/user.module';
 import { ProductModule } from './product/product.module';
-import { BascketModule } from './bascket/bascket.module';
-import { BascketModule } from './bascket/bascket.module';
+import { BasketModule } from './basket/basket.module';
 
 @Module({
   imports: [
@@ -32,9 +31,9 @@ import { BascketModule } from './bascket/bascket.module';
     AuthModule,
     UserModule,
     ProductModule,
-    BascketModule,
+    BasketModule,
   ],
-  controllers: [AppController, UserController],
-  providers: [AppService, UserService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

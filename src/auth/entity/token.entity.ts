@@ -31,7 +31,7 @@ export class Token extends BaseEntity {
     eager: true,
   })
   @JoinColumn({
-    name: 'userCode',
+    name: 'userId',
   })
   user: User;
 

@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Like } from 'typeorm';
+import { Like, Raw } from 'typeorm';
 import { AddProductDto } from './dto/AddProduct.dto';
 import { Product } from './entity/product.entity';
 import { ProductRepository } from './repository/product.repository';
@@ -8,12 +8,12 @@ import { ProductRepository } from './repository/product.repository';
 export class ProductService {
   constructor(private productRepository: ProductRepository) {}
 
-  public async getProducts() {
-    this.productRepository.find();
+  public async getProducts(): Promise<Product[]> {
+    return await this.productRepository.find();
   }
 
   public async findAllProductsByCategory(category: string): Promise<Product[]> {
-    return this.productRepository.find({
+    return await this.productRepository.find({
       where: {
         category,
       },
@@ -36,7 +36,10 @@ export class ProductService {
     });
   }
 
-  public async searchByNameAndCategory(name: string, category: string) {
+  public async searchByNameAndCategory(
+    name: string,
+    category: string,
+  ): Promise<Product[]> {
     return await this.productRepository.find({
       where: {
         name: Like(`%${name}%`),
@@ -45,7 +48,7 @@ export class ProductService {
     });
   }
 
-  public async getOneProduct(id: number) {
+  public async getOneProduct(id: number): Promise<Product> {
     const product: Product = await this.productRepository.findOne(id);
     if (!product)
       throw new HttpException('존재하지 않는 상품 ID', HttpStatus.NOT_FOUND);

@@ -1,10 +1,12 @@
 import { Token } from 'src/auth/entity/token.entity';
+import { Basket } from 'src/basket/entity/basket.entity';
 import {
   BaseEntity,
   Column,
   Entity,
   JoinColumn,
   OneToMany,
+  OneToOne,
   PrimaryColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -41,4 +43,7 @@ export class User extends BaseEntity {
     cascade: true,
   })
   refereshTokens: Token[];
+
+  @OneToOne((type) => Basket, (basket) => basket.user)
+  basket: Basket;
 }
