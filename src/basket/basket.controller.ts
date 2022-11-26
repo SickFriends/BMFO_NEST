@@ -15,8 +15,6 @@ export class BasketController {
   constructor(private basketService: BasketService) {}
   @Get('/getShoppingBasket')
   public async getMyShoppingBasket(@GetUser() user: User) {
-    console.log('dd');
-    console.log(user);
     return await this.basketService.getShoppingBasket(user);
   }
   @Post('/putProduct')

@@ -1,5 +1,6 @@
 import { Token } from 'src/auth/entity/token.entity';
 import { Basket } from 'src/basket/entity/basket.entity';
+import { LockerPass } from 'src/locker/entity/LockerPass.entity';
 import { Order } from 'src/order/entity/order.entity';
 import {
   BaseEntity,
@@ -50,4 +51,7 @@ export class User extends BaseEntity {
 
   @OneToOne((type) => Basket, (basket) => basket.user)
   basket: Basket;
+
+  @OneToOne((type) => LockerPass, (lockerPass) => lockerPass.user)
+  lockerPass: LockerPass;
 }
