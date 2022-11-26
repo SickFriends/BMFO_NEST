@@ -29,13 +29,14 @@ export class BasketService {
       },
       relations: ['basketProducts', 'basketProducts.product'],
     });
+    const resProducts: GetBasketResponseDto[] = [];
     if (!basket) {
-      basket = new Basket();
-      basket.userId = user.userId;
-      await Basket.save(basket);
+      const newbasket = new Basket();
+      newbasket.userId = user.userId;
+      basket = await newbasket.save();
+      return resProducts;
     }
     const { basketProducts } = basket;
-    const resProducts: GetBasketResponseDto[] = [];
     await Promise.all(
       basketProducts.map((productInfo) => {
         console.log(productInfo);

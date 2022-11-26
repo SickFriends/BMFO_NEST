@@ -11,7 +11,7 @@ async function bootstrap() {
   app.useStaticAssets(path.join(__dirname, 'uploads'), {
     prefix: '/media',
   });
-  app.setGlobalPrefix('api');
+  // app.setGlobalPrefix('api');
   app.setBaseViewsDir(join(__dirname, '..', 'src', 'views'));
   app.setViewEngine('ejs');
   app.use(cookieParser());
