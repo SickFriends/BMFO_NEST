@@ -32,22 +32,14 @@ export class LockerService {
     return false;
   }
 
-  public async getLockerPass(lockerId: number) {
-    const lockerPass = await this.lockerRepository.findOne({
-      select: ['password'],
-      where: { lockerId },
-    });
-    if (!lockerPass) {
-      return null;
-    }
-    return lockerPass.password;
-  }
-
   private async checkLockerPass(lockerId: number, password: string) {
-    const locker: Locker = await this.lockerRepository.findOne(lockerId, {
-      select: ['password'],
-      relations: ['assignedOrder'],
+    const locker: Locker = await this.lockerRepository.findOne({
+      where: {
+        lockerId,
+      },
+      select: ['password', 'lockerId', 'isUsing'],
     });
+    console.log(locker);
     if (!locker.isUsing) {
       //이 때, 현재 맡겨놓은 물건이 없는 라커이다.
       throw new HttpException(
@@ -55,8 +47,7 @@ export class LockerService {
         HttpStatus.BAD_GATEWAY,
       );
     }
-    const lockerPassword = await this.getLockerPass(locker.lockerId);
-    if (lockerPassword === password) {
+    if (locker.password === password) {
       return true;
     }
     return false;
@@ -64,10 +55,10 @@ export class LockerService {
 
   public async returnLocker(lockerId: number) {
     await this.lockerRepository.update(
-      { isUsing: false, password: '', orderId: null },
       {
         lockerId,
       },
+      { isUsing: false, password: '', orderId: null },
     );
   }
 
@@ -78,7 +69,6 @@ export class LockerService {
     const lockers: Locker[] = await this.lockerRepository.find({
       isUsing: false,
     });
-
     if (lockers.length === 0) {
       throw new HttpException(
         '사물함을 배정할 수 없습니다',
@@ -95,7 +85,6 @@ export class LockerService {
         password,
       },
     );
-
     return await this.lockerRepository.findOne({
       select: ['lockerId', 'isUsing'],
       where: {

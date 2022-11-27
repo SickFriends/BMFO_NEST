@@ -11,7 +11,7 @@ import { LockerService } from './locker.service';
 export class LockerController {
   constructor(private lockerService: LockerService) {}
 
-  //판매자가 상품을 제공하기 위해 또는 특정한 이유로 라커문을 여는 경우에 사용하는 API이다.
+  // 판매자가 상품을 제공하기 위해 또는 특정한 이유로 라커문을 여는 경우에 사용하는 API이다.
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.SELLER)
   @Post('/openForProviding')
@@ -19,8 +19,8 @@ export class LockerController {
     await this.lockerService.openForSeller(lockerId);
   }
 
-  //기계에서 비밀번호를 받아와 문을 여는 경우에 사용하는 API이다.
-  @Post('/openWithPass')
+  // 기계에서 비밀번호를 받아와 문을 여는 경우에 사용하는 API이다.
+  @Get('/openWithPass')
   public async openForCustommer(
     @Body('lockerId') lockerId: number,
     @Body('lockerPassword') lockerPassword: string,
@@ -31,6 +31,6 @@ export class LockerController {
   //라커 정보들을 불러오는 API이다.
   @Get('')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
-  public async getLockers() {}
+  @Roles(RoleType.CUSTOMER)
+  public async getAllLockers() {}
 }

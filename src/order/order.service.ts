@@ -181,7 +181,7 @@ export class OrderService {
       )
       .toPromise();
     this.taskService.deleteTimeout(`lockerFor${orderId}`);
-    //해당 주문서에 결제 승인 상태 (isApprove)를 false로 바꾼다.
+    // 해당 주문서에 결제 승인 상태 (isApprove)를 false로 바꾼다.
     await this.orderRepository.update(
       {
         orderId,
@@ -193,4 +193,8 @@ export class OrderService {
   }
 
   public async failedOrder() {}
+
+  public async getActivatedUserOrder(userId: number) {
+    return await this.orderRepository.getActivatedUserOrders(userId);
+  }
 }

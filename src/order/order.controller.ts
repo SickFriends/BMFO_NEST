@@ -56,4 +56,9 @@ export class OrderController {
   public async rejectPurchase() {
     //결제 취소를 한다.
   }
+
+  @Get('/getMyActivatedOrders')
+  public async getMyActivatedOrders(@GetUser() user: User) {
+    return await this.orderService.getActivatedUserOrder(user.userId);
+  }
 }
