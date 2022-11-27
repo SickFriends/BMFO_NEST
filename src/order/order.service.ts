@@ -64,7 +64,7 @@ export class OrderService {
     return this.orderRepository.save(newOrder);
   }
 
-  public async successedOrder(orderId: string) {
+  public async successedOrder(orderId: string, paymentKey: string) {
     const order: Order = await this.orderRepository.findOne(
       { orderId },
       { relations: ['assignedLocker'] },
@@ -75,15 +75,24 @@ export class OrderService {
         HttpStatus.BAD_GATEWAY,
       );
     }
+
+    // + HTTP 요청으로 토스로 결제가 잘 되었는지 조회한다
+    //GET /v1/aemnpsty/orders/{ orderId };
+
+    // + paymentKey가 toss에서 조회한 paymentKey 와 같은지 검사한다
+
+    // + 조회가 되지 않았다면
+    //에러를 발생시킨다.
+
+    // 조회가 된다면 결제 시간에 맞추어졌는지 확인한다.
     if (order.assignedLocker.orderId !== orderId) {
+      //결제시간과 다르다면 결제를 취소한다.
       this.rejectOrder(orderId);
       throw new HttpException(
         '결제 시간이 지났습니다 (결제를 취소합니다)',
         HttpStatus.GATEWAY_TIMEOUT,
       );
     }
-
-    // + HTTP 요청으로 토스로 결제가 잘 되었는지 조회한다
 
     // 잘 조회가 된다면 해당 주문서에 isApprove를 true로 바꾼다.
     await this.orderRepository.update(
@@ -102,5 +111,6 @@ export class OrderService {
 
   public async rejectOrder(orderId: string) {
     //+ HTTP 요청으로 토스 결제를 취소한다
+    // POST /v1/payments/{paymentKey}/cancel
   }
 }
