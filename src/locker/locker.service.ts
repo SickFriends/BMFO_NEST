@@ -93,5 +93,13 @@ export class LockerService {
     });
   }
 
+  public async getLockerById(lockerId: number) {
+    const locker = await this.lockerRepository.findOne(lockerId);
+    if (!locker) {
+      throw new HttpException('', HttpStatus.NOT_FOUND);
+    }
+    return locker;
+  }
+
   //locker detail, locker history..
 }

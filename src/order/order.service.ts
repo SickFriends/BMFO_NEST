@@ -201,12 +201,14 @@ export class OrderService {
     if (!order.isApprove) {
       throw new HttpException('', HttpStatus.BAD_REQUEST);
     }
-    // + 주문서에 있는 lockerId의 라커의 orderId가 현재 orderId로 똑같이 가지고 있는지를 확인한다.
-    // 그리고 같다면 아래를 2개의 함수를함수를 실행한다.
-    this.taskService.deleteTimeout(`lockerFor${orderId}`);
-    await this.lockerService.returnLocker(order.lockerId);
-    //
 
+    const locker = await this.lockerService.getLockerById(order.lockerId);
+    //혹시나 해당 주문으로 활성화 된 라커가 있다면 라커를 바로 반환해준다.
+    if (locker.orderId === orderId) {
+      // 주문서에 있는 lockerId의 라커의 orderId가 현재 orderId로 똑같이 가지고 있는지를 확인한다.
+      this.taskService.deleteTimeout(`lockerFor${orderId}`);
+      await this.lockerService.returnLocker(order.lockerId);
+    }
     // 해당 주문서에 결제 승인 상태 (isApprove)를 false로 바꾼다.
     await this.orderRepository.update(
       {
