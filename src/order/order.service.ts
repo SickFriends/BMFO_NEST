@@ -74,6 +74,8 @@ export class OrderService {
       //현재 오더가 3분뒤에 approve가 되었는지 확인한다.
       //approve가 되지 않았다면
       const order = await this.orderRepository.findOne({ orderId });
+      // const locker = await this.lockerService.
+
       if (!order.isApprove) {
         await this.lockerService.returnLocker(order.lockerId);
       }
@@ -96,14 +98,12 @@ export class OrderService {
     //GET /v1/aemnpsty/orders/{ orderId };
     let fetchedPaymentKey: string;
     try {
-      console.log(orderId, '-------');
       const response = await this.httpService
         .get(`https://api.tosspayments.com/v1/payments/orders/${orderId}`, {
           headers: this.headersRequest,
         })
         .toPromise();
       fetchedPaymentKey = response.data.paymentKey;
-      console.log(fetchedPaymentKey, '--------');
     } catch (e) {
       console.log(e);
       // + 조회가 되지 않았다면
@@ -134,7 +134,10 @@ export class OrderService {
     // 그런데 결제가 되었더라도 라커가 아직도 이 주문을 가지고있는지 확인한다.
     if (order.assignedLocker.orderId !== orderId) {
       //가지고 있지 않다면 결제를 취소한다 //이미 시간이 지나서 다른사람이 사용중이거나 비어있음.
-      await this.rejectOrder(orderId);
+      await this.cancelOrder(
+        orderId,
+        '결제시간 지연으로 인한 사물함 할당 박탈',
+      );
       throw new HttpException(
         '결제 시간이 지났습니다 (결제를 취소합니다)',
         HttpStatus.GATEWAY_TIMEOUT,
@@ -144,7 +147,7 @@ export class OrderService {
     // ++ 판매자에게 구매목록을 소켓으로 보내준다.
   }
 
-  public async rejectOrder(orderId: string) {
+  public async cancelOrder(orderId: string, cancelReason: string = '') {
     const order: Order = await this.orderRepository.findOne({ orderId });
     if (!order) {
       throw new HttpException(
@@ -160,6 +163,7 @@ export class OrderService {
     }
     let fetchedPaymentKey: string;
     try {
+      //주문을 toss에서 조회한다.
       const response = await this.httpService
         .get(`https://api.tosspayments.com/v1/payments/orders/${orderId}`, {
           headers: this.headersRequest,
@@ -178,9 +182,31 @@ export class OrderService {
     await this.httpService
       .post(
         `https://api.tosspayments.com/v1/payments/${fetchedPaymentKey}/cancel`,
+        {
+          cancelReason,
+        },
       )
       .toPromise();
+    await this.orderisNotApproved(orderId);
+  }
+
+  public async orderisNotApproved(orderId: string) {
+    const order = await this.orderRepository.findOne({ orderId });
+    if (!order) {
+      throw new HttpException(
+        '존재하지 않는 주문서인데..',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (!order.isApprove) {
+      throw new HttpException('', HttpStatus.BAD_REQUEST);
+    }
+    // + 주문서에 있는 lockerId의 라커의 orderId가 현재 orderId로 똑같이 가지고 있는지를 확인한다.
+    // 그리고 같다면 아래를 2개의 함수를함수를 실행한다.
     this.taskService.deleteTimeout(`lockerFor${orderId}`);
+    await this.lockerService.returnLocker(order.lockerId);
+    //
+
     // 해당 주문서에 결제 승인 상태 (isApprove)를 false로 바꾼다.
     await this.orderRepository.update(
       {
@@ -192,9 +218,7 @@ export class OrderService {
     );
   }
 
-  public async failedOrder() {}
-
-  public async getActivatedUserOrder(userId: number) {
+  public async getActivatedUserOrders(userId: number) {
     return await this.orderRepository.getActivatedUserOrders(userId);
   }
 }

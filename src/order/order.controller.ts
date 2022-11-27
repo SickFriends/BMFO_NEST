@@ -46,19 +46,21 @@ export class OrderController {
   }
   //토스에서 결제가 실패했을 때 사용하는 API 이다.
   @Post('/purchaseFail')
-  public async purchaseFailed() {
-    // + 혹시 실행되지 않았을 스케줄러를 취소한다.
-    // + 해당 주문서의 사물함을 returnLocker한다.
+  public async purchaseFailed(@Query('orderId') orderId: string) {
+    return await this.orderService.orderisNotApproved(orderId);
   }
+
   //판매자가 결제 취소 할 때 사용하는 API 이다.
-  @Post('/rejectPurchase')
+  @Post('/cancelPurchase')
   @Roles(RoleType.SELLER)
-  public async rejectPurchase() {
+  public async cancelPurchase(@Query('ofderId') orderId: string) {
     //결제 취소를 한다.
+    return await this.orderService.cancelOrder(orderId);
   }
 
   @Get('/getMyActivatedOrders')
+  @Roles(RoleType.CUSTOMER)
   public async getMyActivatedOrders(@GetUser() user: User) {
-    return await this.orderService.getActivatedUserOrder(user.userId);
+    return await this.orderService.getActivatedUserOrders(user.userId);
   }
 }
