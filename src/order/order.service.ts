@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpService,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { BasketService } from 'src/basket/basket.service';
 import { Basket } from 'src/basket/entity/basket.entity';
@@ -18,7 +23,15 @@ export class OrderService {
     private lockerService: LockerService,
     private basketService: BasketService,
     private taskService: TaskService,
-  ) {}
+    private httpService: HttpService,
+  ) {
+    this.headersRequest = {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${process.env.tossKey}`,
+    };
+  }
+
+  private headersRequest;
   //주문서를 만드는 메서드이다
   public async purchase(user: User, lockerPass: string) {
     const userBasket = await this.basketService.getShoppingBasket(user);
@@ -54,14 +67,14 @@ export class OrderService {
     newOrder.isApprove = false;
 
     this.taskService.addNewTimeout(`lockerFor${orderId}`, 180000, async () => {
-      //현재 오더가 approve가 되었는지 확인한다.
+      //현재 오더가 3분뒤에 approve가 되었는지 확인한다.
       //approve가 되지 않았다면
       const order = await this.orderRepository.findOne({ orderId });
       if (!order.isApprove) {
         await this.lockerService.returnLocker(order.lockerId);
       }
     });
-    return this.orderRepository.save(newOrder);
+    return await this.orderRepository.save(newOrder);
   }
 
   public async successedOrder(orderId: string, paymentKey: string) {
@@ -75,14 +88,31 @@ export class OrderService {
         HttpStatus.BAD_GATEWAY,
       );
     }
-
     // + HTTP 요청으로 토스로 결제가 잘 되었는지 조회한다
     //GET /v1/aemnpsty/orders/{ orderId };
-
-    // + paymentKey가 toss에서 조회한 paymentKey 와 같은지 검사한다
-
-    // + 조회가 되지 않았다면
-    //에러를 발생시킨다.
+    let fetchedPaymentKey: string;
+    try {
+      const response = await this.httpService
+        .get(`https://api.tosspayments.com/v1/payments/orders/${orderId}`, {
+          headers: this.headersRequest,
+        })
+        .toPromise();
+      fetchedPaymentKey = response.data.paymentKey;
+    } catch (e) {
+      // + 조회가 되지 않았다면
+      throw new HttpException(
+        '존재하지 않는 결제입니다',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    // + paymentKey가 toss에서 조회한 paymentKey 와 같은지 검사한다.
+    if (fetchedPaymentKey !== paymentKey) {
+      //같지 않다면 에러를 발생시킨다.
+      throw new HttpException(
+        '정상적인 결제가 아닙니다',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     // 조회가 된다면 결제 시간에 맞추어졌는지 확인한다.
     if (order.assignedLocker.orderId !== orderId) {
@@ -107,10 +137,37 @@ export class OrderService {
     // ++ 판매자에게 구매목록을 소켓으로 보내준다.
   }
 
-  public async failedOrder() {}
-
   public async rejectOrder(orderId: string) {
+    const order: Order = await this.orderRepository.findOne({ orderId });
+    if (!order) {
+      throw new HttpException(
+        '잘못된 접근입니다 (존재하지 않는 주문서)',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+    let fetchedPaymentKey: string;
+    try {
+      const response = await this.httpService
+        .get(`https://api.tosspayments.com/v1/payments/orders/${orderId}`, {
+          headers: this.headersRequest,
+        })
+        .toPromise();
+      fetchedPaymentKey = response.data.paymentKey;
+    } catch (e) {
+      // + 조회가 되지 않았다면
+      throw new HttpException(
+        '존재하지 않는 결제 또는 이미 취소된 결제 입니다',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.httpService
+      .post(
+        `https://api.tosspayments.com/v1/payments/${fetchedPaymentKey}/cancel`,
+      )
+      .toPromise();
     //+ HTTP 요청으로 토스 결제를 취소한다
     // POST /v1/payments/{paymentKey}/cancel
   }
+
+  public async failedOrder() {}
 }
