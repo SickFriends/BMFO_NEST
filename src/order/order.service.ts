@@ -25,9 +25,9 @@ export class OrderService {
     private taskService: TaskService,
     private httpService: HttpService,
   ) {
+    console.log(process.env.TOSS_KEY);
     this.headersRequest = {
-      'Content-Type': 'application/json',
-      Authorization: `Basic ${process.env.TOSS_KEY}`,
+      Authorization: `Basic dGVzdF9za19QMjR4TGVhNXpWQTBSQk5ScXA2M1FBTVlOd1c2Og==`,
     };
   }
 
@@ -47,24 +47,28 @@ export class OrderService {
     newOrder.orderedAt = new Date();
     newOrder.userId = user.userId;
     newOrder.orderId = orderId;
+    console.log(2);
     const assignedLocker: Locker = await this.lockerService.assignLocker(
       orderId,
       lockerPass,
     );
     newOrder.lockerId = assignedLocker.lockerId; //어디 라커에 배정받았었는지 확인하기위한 용도..
+    userBasket.map((productInfo) => {
+      totalPrice += productInfo.count * productInfo.product.price;
+    });
+    newOrder.amount = totalPrice;
+    newOrder.isApprove = false;
+    const order = await this.orderRepository.save(newOrder);
     await Promise.all(
       userBasket.map((productInfo) => {
         this.orderedProductRepository.save({
-          orderId: newOrder.orderId,
+          orderId: order.orderId,
           productName: productInfo.product.name,
           productPrice: productInfo.product.price,
           count: productInfo.count,
         });
-        totalPrice += productInfo.count * productInfo.product.price;
       }),
     );
-    newOrder.amount = totalPrice;
-    newOrder.isApprove = false;
     // 스케줄러로 3분 뒤에도 아직 isApprove(결제 승인 상태)가 false 라면 returnLocker(lockerId) 한다.
     this.taskService.addNewTimeout(`lockerFor${orderId}`, 180000, async () => {
       //현재 오더가 3분뒤에 approve가 되었는지 확인한다.
@@ -74,7 +78,7 @@ export class OrderService {
         await this.lockerService.returnLocker(order.lockerId);
       }
     });
-    return await this.orderRepository.save(newOrder);
+    return order;
   }
 
   public async successedOrder(orderId: string, paymentKey: string) {
@@ -92,13 +96,16 @@ export class OrderService {
     //GET /v1/aemnpsty/orders/{ orderId };
     let fetchedPaymentKey: string;
     try {
+      console.log(orderId, '-------');
       const response = await this.httpService
         .get(`https://api.tosspayments.com/v1/payments/orders/${orderId}`, {
           headers: this.headersRequest,
         })
         .toPromise();
       fetchedPaymentKey = response.data.paymentKey;
+      console.log(fetchedPaymentKey, '--------');
     } catch (e) {
+      console.log(e);
       // + 조회가 되지 않았다면
       throw new HttpException(
         '존재하지 않는 결제입니다',

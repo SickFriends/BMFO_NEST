@@ -19,7 +19,7 @@ export class ProductService {
       },
     });
   }
-  
+
   public async addProduct(addProductDto: AddProductDto): Promise<void> {
     const newProduuct = new Product();
     newProduuct.category = addProductDto.category;
@@ -51,6 +51,7 @@ export class ProductService {
 
   public async getOneProduct(id: number): Promise<Product> {
     const product: Product = await this.productRepository.findOne(id);
+    console.log(product);
     if (!product)
       throw new HttpException('존재하지 않는 상품 ID', HttpStatus.NOT_FOUND);
     return product;

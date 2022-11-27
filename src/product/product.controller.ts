@@ -24,8 +24,8 @@ export class ProductController {
   constructor(private productService: ProductService) {}
   //상품 추가
   @Post('addProduct')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleType.SELLER)
+  @UseGuards(AuthGuard)
+  // @Roles(RoleType.SELLER)
   @UseInterceptors(FilesInterceptor('img', 1, multerOptions('products')))
   async addProduct(
     @UploadedFiles() img: Express.Multer.File[],
@@ -64,7 +64,7 @@ export class ProductController {
 
   //상품
   @Get('/getOneProduct')
-  async getOneProduct(@Param('id') id: number) {
+  async getOneProduct(@Query('id') id: number) {
     return await this.productService.getOneProduct(id);
   }
 }

@@ -28,4 +28,7 @@ export class BasketController {
     await this.basketService.putProduct(req);
     return '성공';
   }
+
+  @Post('/deleteProduct')
+  public async deleteProduct() {}
 }

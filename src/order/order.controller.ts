@@ -1,4 +1,13 @@
-import { Body, Controller, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { Response } from 'express';
 import { Roles } from 'src/auth/decorator/role.decorator';
 import { GetUser } from 'src/auth/decorator/userinfo.decorator';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -21,16 +30,19 @@ export class OrderController {
     @GetUser() user: User,
     @Body('password') password: string,
   ) {
-    //매점 운영 시간 확인도 하기x
+    // 매점 운영 시간 확인도 하기 x
     return await this.orderService.purchase(user, password);
   }
   //토스에서 결제가 성공했을 때 사용하는 API 이다.
-  @Post('/purchaseSuccess')
+  @Get('/purchaseSuccess')
   public async purchaseSuccessed(
     @Query('orderId') orderId: string,
     @Query('paymentKey') paymentKey: string,
+    @Res() res: Response,
   ) {
-    return await this.orderService.successedOrder(orderId, paymentKey);
+    console.log(orderId, paymentKey);
+    await this.orderService.successedOrder(orderId, paymentKey);
+    res.redirect('http://localhost:3000');
   }
   //토스에서 결제가 실패했을 때 사용하는 API 이다.
   @Post('/purchaseFail')

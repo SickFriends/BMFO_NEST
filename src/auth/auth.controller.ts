@@ -44,10 +44,12 @@ export class AuthController {
     return await this.authService.login(req, userDto);
   }
 
-  @Post('/logout')
+  @Get('/logout')
   @UseGuards(AuthGuard)
-  async logout(@Req() req: Request, @Res() res: Response): Promise<void> {
-    await this.authService.logout(res);
+  async logout(@Req() req: Request, @Res() res: Response) {
+    console.log(req.user);
+    await this.authService.logout(req);
+    res.send('dd');
   }
 
   @Get('/getUser')

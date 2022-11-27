@@ -81,13 +81,15 @@ export class AuthService {
     };
   }
 
-  public async logout(res: Response) {
-    res.cookie('accessToken', '', {
+  public async logout(req: Request) {
+    req.res.cookie('accessToken', '', {
       maxAge: 0,
     });
-    res.cookie('refreshToken', '', {
+    req.res.cookie('refreshToken', '', {
       maxAge: 0,
     });
+    console.log('okay');
+    return 'okay';
   }
 
   private async createToken(userId: number): Promise<Token> {
