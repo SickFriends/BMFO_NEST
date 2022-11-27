@@ -31,7 +31,7 @@ export class OrderService {
     };
   }
 
-  private headersRequest;
+  private headersRequest = {};
   //주문서를 만드는 메서드이다
   public async purchase(user: User, lockerPass: string) {
     const userBasket = await this.basketService.getShoppingBasket(user);
@@ -65,7 +65,7 @@ export class OrderService {
     );
     newOrder.amount = totalPrice;
     newOrder.isApprove = false;
-
+    // 스케줄러로 5분 뒤에도 아직 isApprove가 false 라면 returnLocker(lockerId) 한다.
     this.taskService.addNewTimeout(`lockerFor${orderId}`, 180000, async () => {
       //현재 오더가 3분뒤에 approve가 되었는지 확인한다.
       //approve가 되지 않았다면
@@ -114,17 +114,7 @@ export class OrderService {
       );
     }
 
-    // 조회가 된다면 결제 시간에 맞추어졌는지 확인한다.
-    if (order.assignedLocker.orderId !== orderId) {
-      //결제시간과 다르다면 결제를 취소한다.
-      this.rejectOrder(orderId);
-      throw new HttpException(
-        '결제 시간이 지났습니다 (결제를 취소합니다)',
-        HttpStatus.GATEWAY_TIMEOUT,
-      );
-    }
-
-    // 잘 조회가 된다면 해당 주문서에 isApprove를 true로 바꾼다.
+    // 잘 조회가 된다면 해당 주문서에 결제 승인 상태 (isApprove)를 true로 바꾼다.
     await this.orderRepository.update(
       {
         orderId,
@@ -133,6 +123,16 @@ export class OrderService {
         isApprove: true,
       },
     );
+
+    // 그런데 결제가 되었더라도 라커가 아직도 이 주문을 가지고있는지 확인한다.
+    if (order.assignedLocker.orderId !== orderId) {
+      //가지고 있지 않다면 결제를 취소한다 //이미 시간이 지나서 다른사람이 사용중이거나 비어있음.
+      await this.rejectOrder(orderId);
+      throw new HttpException(
+        '결제 시간이 지났습니다 (결제를 취소합니다)',
+        HttpStatus.GATEWAY_TIMEOUT,
+      );
+    }
 
     // ++ 판매자에게 구매목록을 소켓으로 보내준다.
   }
@@ -143,6 +143,12 @@ export class OrderService {
       throw new HttpException(
         '잘못된 접근입니다 (존재하지 않는 주문서)',
         HttpStatus.BAD_GATEWAY,
+      );
+    }
+    if (!order.isApprove) {
+      throw new HttpException(
+        '결제가 되지 않았거나, 결제가 이미 취소된 주문서입니다',
+        HttpStatus.BAD_REQUEST,
       );
     }
     let fetchedPaymentKey: string;
@@ -156,17 +162,27 @@ export class OrderService {
     } catch (e) {
       // + 조회가 되지 않았다면
       throw new HttpException(
-        '존재하지 않는 결제 또는 이미 취소된 결제 입니다',
+        '존재하지 않는 결제 입니다.',
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    //HTTP 요청으로 토스 결제를 취소한다
     await this.httpService
       .post(
         `https://api.tosspayments.com/v1/payments/${fetchedPaymentKey}/cancel`,
       )
       .toPromise();
-    //+ HTTP 요청으로 토스 결제를 취소한다
-    // POST /v1/payments/{paymentKey}/cancel
+    this.taskService.deleteTimeout(`lockerFor${orderId}`);
+    //해당 주문서에 결제 승인 상태 (isApprove)를 false로 바꾼다.
+    await this.orderRepository.update(
+      {
+        orderId,
+      },
+      {
+        isApprove: false,
+      },
+    );
   }
 
   public async failedOrder() {}

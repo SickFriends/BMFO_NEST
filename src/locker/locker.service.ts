@@ -96,8 +96,6 @@ export class LockerService {
       },
     );
 
-    // + 스케줄러로 5분 뒤에, order를 확인해서 isApprove가 false 라면 returnLocker(lockerId) 한다.
-
     return await this.lockerRepository.findOne({
       select: ['lockerId', 'isUsing'],
       where: {

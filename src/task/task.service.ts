@@ -11,6 +11,9 @@ export class TaskService {
     this.schedulerRegistry.addTimeout(timeoutName, timeout);
     this.logger.log(`${timeoutName} is excuted`);
   }
+  deleteTimeout(timeoutName: string) {
+    this.schedulerRegistry.deleteTimeout(timeoutName);
+  }
   addNewSchedule(name: string, time: Date, callback: any) {
     const job = new CronJob(time, callback);
     this.schedulerRegistry.addCronJob(name, job);
