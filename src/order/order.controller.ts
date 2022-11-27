@@ -21,7 +21,7 @@ export class OrderController {
     @GetUser() user: User,
     @Body('password') password: string,
   ) {
-    //매점 운영 시간 확인도 하기
+    //매점 운영 시간 확인도 하기x
     return await this.orderService.purchase(user, password);
   }
   //토스에서 결제가 성공했을 때 사용하는 API 이다.

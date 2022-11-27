@@ -19,6 +19,7 @@ export class ProductService {
       },
     });
   }
+  
   public async addProduct(addProductDto: AddProductDto): Promise<void> {
     const newProduuct = new Product();
     newProduuct.category = addProductDto.category;

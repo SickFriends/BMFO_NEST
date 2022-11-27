@@ -27,7 +27,7 @@ export class OrderService {
   ) {
     this.headersRequest = {
       'Content-Type': 'application/json',
-      Authorization: `Basic ${process.env.tossKey}`,
+      Authorization: `Basic ${process.env.TOSS_KEY}`,
     };
   }
 
@@ -65,7 +65,7 @@ export class OrderService {
     );
     newOrder.amount = totalPrice;
     newOrder.isApprove = false;
-    // 스케줄러로 5분 뒤에도 아직 isApprove가 false 라면 returnLocker(lockerId) 한다.
+    // 스케줄러로 3분 뒤에도 아직 isApprove(결제 승인 상태)가 false 라면 returnLocker(lockerId) 한다.
     this.taskService.addNewTimeout(`lockerFor${orderId}`, 180000, async () => {
       //현재 오더가 3분뒤에 approve가 되었는지 확인한다.
       //approve가 되지 않았다면
