@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { Roles } from 'src/auth/decorator/role.decorator';
 import { GetUser } from 'src/auth/decorator/userinfo.decorator';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -30,5 +30,14 @@ export class BasketController {
   }
 
   @Post('/deleteProduct')
-  public async deleteProduct() {}
+  public async deleteProduct(
+    @GetUser() user: User,
+    @Query('basketProductId') basketProductId: number,
+  ) {
+    //작성하기
+    return await this.basketService.deleteBaketProduct(
+      user.userId,
+      basketProductId,
+    );
+  }
 }

@@ -68,4 +68,34 @@ export class BasketService {
     newBasketProduct.productId = product.productId;
     this.basketProductRepository.save(newBasketProduct);
   }
+
+  public async getBasketByUserId(userId: number): Promise<Basket> {
+    let basket: Basket = await this.basketRepository.findOne({
+      where: {
+        userId: userId,
+      },
+    });
+    if (!basket) {
+      throw new HttpException('', HttpStatus.NOT_FOUND);
+    }
+    return basket;
+  }
+
+  public async deleteAll(userId: number): Promise<void> {
+    let basket: Basket = await this.getBasketByUserId(userId);
+    await this.basketProductRepository.delete({
+      basketId: basket.basketId,
+    });
+  }
+
+  public async deleteBaketProduct(
+    userId: number,
+    basketProductId: number,
+  ): Promise<void> {
+    const basket: Basket = await this.getBasketByUserId(userId);
+    await this.basketProductRepository.delete({
+      basketId: basket.basketId,
+      id: basketProductId,
+    });
+  }
 }

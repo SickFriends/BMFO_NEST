@@ -5,6 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { userInfo } from 'os';
 import { BasketService } from 'src/basket/basket.service';
 import { Basket } from 'src/basket/entity/basket.entity';
 import { Locker } from 'src/locker/entity/locker.entity';
@@ -71,13 +72,19 @@ export class OrderService {
     );
     // 스케줄러로 3분 뒤에도 아직 isApprove(결제 승인 상태)가 false 라면 returnLocker(lockerId) 한다.
     this.taskService.addNewTimeout(`lockerFor${orderId}`, 180000, async () => {
-      //현재 오더가 3분뒤에 approve가 되었는지 확인한다.
-      //approve가 되지 않았다면
-      const order = await this.orderRepository.findOne({ orderId });
-      // const locker = await this.lockerService.
-
+      const order = await this.orderRepository.findOne(
+        { orderId },
+        {
+          relations: ['assignedLocker'],
+        },
+      );
+      //현재 오더가 3분뒤에도 승인이 안되었는데
+      // 라커가 아직도 내 오더를 들고있는지 확인한다
       if (!order.isApprove) {
-        await this.lockerService.returnLocker(order.lockerId);
+        if (order.assignedLocker.orderId === orderId) {
+          //그렇다면 라커를 반환해서 내 오더를 버리게해준다.
+          await this.lockerService.returnLocker(order.lockerId);
+        }
       }
     });
     return order;
@@ -143,6 +150,7 @@ export class OrderService {
         HttpStatus.GATEWAY_TIMEOUT,
       );
     }
+    await this.basketService.deleteAll(order.userId);
 
     // ++ 판매자에게 구매목록을 소켓으로 보내준다.
   }
@@ -201,12 +209,10 @@ export class OrderService {
     if (!order.isApprove) {
       throw new HttpException('', HttpStatus.BAD_REQUEST);
     }
-
     const locker = await this.lockerService.getLockerById(order.lockerId);
     //혹시나 해당 주문으로 활성화 된 라커가 있다면 라커를 바로 반환해준다.
     if (locker.orderId === orderId) {
       // 주문서에 있는 lockerId의 라커의 orderId가 현재 orderId로 똑같이 가지고 있는지를 확인한다.
-      this.taskService.deleteTimeout(`lockerFor${orderId}`);
       await this.lockerService.returnLocker(order.lockerId);
     }
     // 해당 주문서에 결제 승인 상태 (isApprove)를 false로 바꾼다.
