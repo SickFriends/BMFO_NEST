@@ -33,10 +33,33 @@ export class OrderService {
   private headersRequest = {};
 
   //페이지네이션 추가하기
-  public async getOrderList(userId: number) {}
+  public async getOrderList(userId: number, page: number = 1) {
+    const [orders, count] = await this.orderRepository.findAndCount({
+      where: {
+        userId,
+      },
+      take: 10,
+      skip: page - 1,
+    });
+    return {
+      orders,
+      maxPage: (count / 10).toFixed(0),
+    };
+  }
 
   //상품 목록까지도 모두 보내기
-  public async getOrderDetail(orderId: string) {}
+  public async getOrderDetail(orderId: string) {
+    const order = await this.orderRepository.findOne({
+      where: {
+        orderId,
+      },
+      relations: ['orderedProducts'],
+    });
+    if (!order) {
+      throw new HttpException('존재하지 않는 주문서', HttpStatus.NOT_FOUND);
+    }
+    return order;
+  }
 
   //주문서를 만드는 메서드이다
   public async purchase(user: User, lockerPass: string) {
@@ -61,7 +84,7 @@ export class OrderService {
     userBasket.map((productInfo) => {
       totalPrice += productInfo.count * productInfo.product.price;
     });
-    if (totalPrice === 0) {
+    if (totalPrice <= 0) {
       throw new HttpException(
         '주문금액이 0원이 넘지 않습니다',
         HttpStatus.BAD_REQUEST,
@@ -195,7 +218,6 @@ export class OrderService {
         HttpStatus.BAD_REQUEST,
       );
     }
-
     //HTTP 요청으로 토스 결제를 취소한다
     await this.httpService
       .post(

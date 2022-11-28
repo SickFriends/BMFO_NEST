@@ -25,10 +25,9 @@ export class LockerController {
     @Body('lockerId') lockerId: number,
     @Body('lockerPassword') lockerPassword: string,
   ) {
-    console.log('dd');
     await this.lockerService.openForCustomer(lockerId, lockerPassword);
     return {
-      success: true,
+      SUCCESS: true,
     };
   }
 

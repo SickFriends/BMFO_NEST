@@ -65,6 +65,16 @@ export class OrderController {
     return await this.orderService.cancelOrder(orderId, reason);
   }
 
+  @Get('/getOrderDetail')
+  public async getOrderDetail(@Query('orderId') orderId: string) {
+    return await this.orderService.getOrderDetail(orderId);
+  }
+
+  @Get('/getMyOrders')
+  public async getMyOrders(@GetUser() user: User, @Query('page') page: number) {
+    return await this.orderService.getOrderList(user.userId, page);
+  }
+
   @Get('/getMyActivatedOrders')
   @Roles(RoleType.CUSTOMER)
   public async getMyActivatedOrders(@GetUser() user: User) {
