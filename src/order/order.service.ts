@@ -231,19 +231,19 @@ export class OrderService {
   }
 
   public async orderisNotApproved(orderId: string) {
-    console.log(orderId);
-
-    const order = await this.orderRepository.findOne({ orderId });
+    const order = await this.orderRepository.findOne({
+      where: {
+        orderId,
+      },
+      relations: ['assignedLocker'],
+    });
     if (!order) {
       throw new HttpException(
         '존재하지 않는 주문서인데..',
         HttpStatus.NOT_FOUND,
       );
     }
-    if (order.isApprove) {
-      throw new HttpException('', HttpStatus.BAD_REQUEST);
-    }
-    const locker = await this.lockerService.getLockerById(order.lockerId);
+    const locker = order.assignedLocker;
     //혹시나 해당 주문으로 활성화 된 라커가 있다면 라커를 바로 반환해준다.
     if (locker.orderId === orderId) {
       // 주문서에 있는 lockerId의 라커의 orderId가 현재 orderId로 똑같이 가지고 있는지를 확인한다.
