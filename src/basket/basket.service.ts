@@ -43,6 +43,7 @@ export class BasketService {
         resProducts.push({
           count: productInfo.count,
           product: productInfo.product,
+          basketProductId: productInfo.id,
         });
       }),
     );
@@ -93,9 +94,10 @@ export class BasketService {
     basketProductId: number,
   ): Promise<void> {
     const basket: Basket = await this.getBasketByUserId(userId);
-    await this.basketProductRepository.delete({
-      basketId: basket.basketId,
-      id: basketProductId,
-    });
+    if (basket.userId === userId) {
+      await this.basketProductRepository.delete({
+        id: basketProductId,
+      });
+    }
   }
 }

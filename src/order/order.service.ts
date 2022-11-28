@@ -5,9 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { userInfo } from 'os';
 import { BasketService } from 'src/basket/basket.service';
-import { Basket } from 'src/basket/entity/basket.entity';
 import { Locker } from 'src/locker/entity/locker.entity';
 import { LockerService } from 'src/locker/locker.service';
 import { TaskService } from 'src/task/task.service';
@@ -33,6 +31,13 @@ export class OrderService {
   }
 
   private headersRequest = {};
+
+  //페이지네이션 추가하기
+  public async getOrderList(userId: number) {}
+
+  //상품 목록까지도 모두 보내기
+  public async getOrderDetail(orderId: string) {}
+
   //주문서를 만드는 메서드이다
   public async purchase(user: User, lockerPass: string) {
     const userBasket = await this.basketService.getShoppingBasket(user);
@@ -48,7 +53,6 @@ export class OrderService {
     newOrder.orderedAt = new Date();
     newOrder.userId = user.userId;
     newOrder.orderId = orderId;
-    console.log(2);
     const assignedLocker: Locker = await this.lockerService.assignLocker(
       orderId,
       lockerPass,
@@ -57,6 +61,12 @@ export class OrderService {
     userBasket.map((productInfo) => {
       totalPrice += productInfo.count * productInfo.product.price;
     });
+    if (totalPrice === 0) {
+      throw new HttpException(
+        '주문금액이 0원이 넘지 않습니다',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     newOrder.amount = totalPrice;
     newOrder.isApprove = false;
     const order = await this.orderRepository.save(newOrder);
@@ -155,7 +165,7 @@ export class OrderService {
     // ++ 판매자에게 구매목록을 소켓으로 보내준다.
   }
 
-  public async cancelOrder(orderId: string, cancelReason: string = '') {
+  public async cancelOrder(orderId: string, cancelReason: string) {
     const order: Order = await this.orderRepository.findOne({ orderId });
     if (!order) {
       throw new HttpException(
@@ -199,6 +209,8 @@ export class OrderService {
   }
 
   public async orderisNotApproved(orderId: string) {
+    console.log(orderId);
+
     const order = await this.orderRepository.findOne({ orderId });
     if (!order) {
       throw new HttpException(
@@ -206,7 +218,7 @@ export class OrderService {
         HttpStatus.NOT_FOUND,
       );
     }
-    if (!order.isApprove) {
+    if (order.isApprove) {
       throw new HttpException('', HttpStatus.BAD_REQUEST);
     }
     const locker = await this.lockerService.getLockerById(order.lockerId);
@@ -230,3 +242,4 @@ export class OrderService {
     return await this.orderRepository.getActivatedUserOrders(userId);
   }
 }
+// pkw42094

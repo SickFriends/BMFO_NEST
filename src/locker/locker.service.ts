@@ -17,14 +17,14 @@ export class LockerService {
 
   public async openForSeller(lockerId: number) {
     //라즈베리파이 플라스크서버에 오픈을 요청한다.
-    this.httpService.post('http://10.150.149.50/open', {});
+    this.httpService.post('http://10.150.149.50:5000/open', {});
   }
 
   public async openForCustomer(lockerId: number, password: string) {
     const isSame = await this.checkLockerPass(lockerId, password);
     if (isSame) {
       //라즈베리 파이 플라스크 서버에 오픈을 요청한다.
-      this.httpService.post('http://10.150.149.50/open', {});
+      this.httpService.post('http://10.150.149.50:5000/open', {});
       await this.returnLocker(lockerId);
       return true;
     }

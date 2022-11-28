@@ -45,17 +45,24 @@ export class OrderController {
     res.redirect('http://localhost:3000');
   }
   //토스에서 결제가 실패했을 때 사용하는 API 이다.
-  @Post('/purchaseFail')
-  public async purchaseFailed(@Query('orderId') orderId: string) {
-    return await this.orderService.orderisNotApproved(orderId);
+  @Get('/purchaseFail')
+  public async purchaseFailed(
+    @Query('orderId') orderId: string,
+    @Res() res: Response,
+  ) {
+    await this.orderService.orderisNotApproved(orderId);
+    res.redirect('http://localhost:3000');
   }
 
   //판매자가 결제 취소 할 때 사용하는 API 이다.
   @Post('/cancelPurchase')
   @Roles(RoleType.SELLER)
-  public async cancelPurchase(@Query('ofderId') orderId: string) {
+  public async cancelPurchase(
+    @Query('ofderId') orderId: string,
+    @Body('reason') reason: string,
+  ) {
     //결제 취소를 한다.
-    return await this.orderService.cancelOrder(orderId);
+    return await this.orderService.cancelOrder(orderId, reason);
   }
 
   @Get('/getMyActivatedOrders')

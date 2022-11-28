@@ -29,7 +29,7 @@ export class BasketController {
     return '성공';
   }
 
-  @Post('/deleteProduct')
+  @Post('/deleteBasketProduct')
   public async deleteProduct(
     @GetUser() user: User,
     @Query('basketProductId') basketProductId: number,

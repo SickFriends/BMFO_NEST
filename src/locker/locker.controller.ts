@@ -20,12 +20,16 @@ export class LockerController {
   }
 
   // 기계에서 비밀번호를 받아와 문을 여는 경우에 사용하는 API이다.
-  @Get('/openWithPass')
+  @Post('/openWithPass')
   public async openForCustommer(
     @Body('lockerId') lockerId: number,
     @Body('lockerPassword') lockerPassword: string,
   ) {
-    return await this.lockerService.openForCustomer(lockerId, lockerPassword);
+    console.log('dd');
+    await this.lockerService.openForCustomer(lockerId, lockerPassword);
+    return {
+      success: true,
+    };
   }
 
   //라커 정보들을 불러오는 API이다.
