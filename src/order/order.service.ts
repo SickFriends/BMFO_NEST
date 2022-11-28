@@ -156,7 +156,7 @@ export class OrderService {
     if (fetchedPaymentKey !== paymentKey) {
       //같지 않다면 에러를 발생시킨다.
       throw new HttpException(
-        '정상적인 결제가 아닙니다',
+        '정상적인 결제가 아닙니다 (toss에서 보낸 요청이 아닌것으로 판단)',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -186,6 +186,49 @@ export class OrderService {
     await this.basketService.deleteAll(order.userId);
 
     // ++ 판매자에게 구매목록을 소켓으로 보내준다.
+  }
+
+  public async failedOrder(orderId: string, paymentKey: string) {
+    const order: Order = await this.orderRepository.findOne(
+      { orderId },
+      { relations: ['assignedLocker'] },
+    );
+    if (!order) {
+      throw new HttpException(
+        '잘못된 접근입니다 (존재하지 않는 주문서)',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+    if (order.isApprove) {
+      throw new HttpException(
+        '이미 결제가 완료가 되었는데요',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    let fetchedPaymentKey: string;
+    try {
+      const response = await this.httpService
+        .get(`https://api.tosspayments.com/v1/payments/orders/${orderId}`, {
+          headers: this.headersRequest,
+        })
+        .toPromise();
+      fetchedPaymentKey = response.data.paymentKey;
+    } catch (e) {
+      console.log(e);
+      // + 조회가 되지 않았다면
+      throw new HttpException(
+        '존재하지 않는 결제입니다',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (fetchedPaymentKey !== paymentKey) {
+      //같지 않다면 에러를 발생시킨다.
+      throw new HttpException(
+        '정상적인 결제 실패 선언이 아닙니다 (toss에서 보낸 요청이 아닌것으로 판단)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.orderisNotApproved(orderId);
   }
 
   public async cancelOrder(orderId: string, cancelReason: string) {

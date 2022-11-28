@@ -48,9 +48,10 @@ export class OrderController {
   @Get('/purchaseFail')
   public async purchaseFailed(
     @Query('orderId') orderId: string,
+    @Query('paymentKey') paymentKey: string,
     @Res() res: Response,
   ) {
-    await this.orderService.orderisNotApproved(orderId);
+    await this.orderService.failedOrder(orderId, paymentKey);
     res.redirect('http://localhost:3000');
   }
 
