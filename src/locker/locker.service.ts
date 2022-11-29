@@ -58,7 +58,7 @@ export class LockerService {
       {
         lockerId,
       },
-      { isUsing: false, password: '', orderId: null },
+      { isUsing: false, password: null, orderId: null },
     );
   }
 
@@ -70,10 +70,7 @@ export class LockerService {
       isUsing: false,
     });
     if (lockers.length === 0) {
-      throw new HttpException(
-        '사물함을 배정할 수 없습니다',
-        HttpStatus.NOT_FOUND,
-      );
+      return null;
     }
     await this.lockerRepository.update(
       {
@@ -100,6 +97,5 @@ export class LockerService {
     }
     return locker;
   }
-
   //locker detail, locker history..
 }

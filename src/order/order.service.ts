@@ -21,10 +21,8 @@ export class OrderService {
     private orderedProductRepository: OrderedProductRepository,
     private lockerService: LockerService,
     private basketService: BasketService,
-    private taskService: TaskService,
     private httpService: HttpService,
   ) {
-    console.log(process.env.TOSS_KEY);
     this.headersRequest = {
       Authorization: `Basic dGVzdF9za19QMjR4TGVhNXpWQTBSQk5ScXA2M1FBTVlOd1c2Og==`,
     };
@@ -38,31 +36,22 @@ export class OrderService {
       where: {
         userId,
       },
-      take: 10,
+      take: 5,
       skip: page - 1,
     });
     return {
       orders,
-      maxPage: (count / 10).toFixed(0),
+      maxPage: (count / 5).toFixed(0),
     };
   }
 
   //상품 목록까지도 모두 보내기
   public async getOrderDetail(orderId: string) {
-    const order = await this.orderRepository.findOne({
-      where: {
-        orderId,
-      },
-      relations: ['orderedProducts'],
-    });
-    if (!order) {
-      throw new HttpException('존재하지 않는 주문서', HttpStatus.NOT_FOUND);
-    }
-    return order;
+    return await this.getOrderById(orderId, ['orderedProducts']);
   }
 
   //주문서를 만드는 메서드이다
-  public async purchase(user: User, lockerPass: string) {
+  public async purchase(user: User) {
     const userBasket = await this.basketService.getShoppingBasket(user);
     if (!userBasket.length) {
       throw new HttpException(
@@ -76,11 +65,7 @@ export class OrderService {
     newOrder.orderedAt = new Date();
     newOrder.userId = user.userId;
     newOrder.orderId = orderId;
-    const assignedLocker: Locker = await this.lockerService.assignLocker(
-      orderId,
-      lockerPass,
-    );
-    newOrder.lockerId = assignedLocker.lockerId; //어디 라커에 배정받았었는지 확인하기위한 용도..
+    newOrder.lockerId = null;
     userBasket.map((productInfo) => {
       totalPrice += productInfo.count * productInfo.product.price;
     });
@@ -103,37 +88,15 @@ export class OrderService {
         });
       }),
     );
-    // 스케줄러로 3분 뒤에도 아직 isApprove(결제 승인 상태)가 false 라면 returnLocker(lockerId) 한다.
-    this.taskService.addNewTimeout(`lockerFor${orderId}`, 180000, async () => {
-      const order = await this.orderRepository.findOne(
-        { orderId },
-        {
-          relations: ['assignedLocker'],
-        },
-      );
-      //현재 오더가 3분뒤에도 승인이 안되었는데
-      // 라커가 아직도 내 오더를 들고있는지 확인한다
-      if (!order.isApprove) {
-        if (order.assignedLocker.orderId === orderId) {
-          //그렇다면 라커를 반환해서 내 오더를 버리게해준다.
-          await this.lockerService.returnLocker(order.lockerId);
-        }
-      }
-    });
     return order;
   }
 
-  public async successedOrder(orderId: string, paymentKey: string) {
-    const order: Order = await this.orderRepository.findOne(
-      { orderId },
-      { relations: ['assignedLocker'] },
-    );
-    if (!order) {
-      throw new HttpException(
-        '잘못된 접근입니다 (존재하지 않는 주문서)',
-        HttpStatus.BAD_GATEWAY,
-      );
-    }
+  public async successedOrder(
+    orderId: string,
+    paymentKey: string,
+    lockerPass: string,
+  ) {
+    const order = await this.getOrderById(orderId, ['assignedLocker']);
     // + HTTP 요청으로 토스로 결제가 잘 되었는지 조회한다
     //GET /v1/aemnpsty/orders/{ orderId };
     let fetchedPaymentKey: string;
@@ -145,8 +108,8 @@ export class OrderService {
         .toPromise();
       fetchedPaymentKey = response.data.paymentKey;
     } catch (e) {
-      console.log(e);
       // + 조회가 되지 않았다면
+      console.log(e);
       throw new HttpException(
         '존재하지 않는 결제입니다',
         HttpStatus.BAD_REQUEST,
@@ -160,45 +123,37 @@ export class OrderService {
         HttpStatus.BAD_REQUEST,
       );
     }
-
-    // 잘 조회가 된다면 해당 주문서에 결제 승인 상태 (isApprove)를 true로 바꾼다.
+    // 잘 조회가 된다면 일단, 해당 주문서에 결제 승인 상태 (isApprove)를 true로 바꾼다.
+    await this.updateOrderStatus(orderId, true);
+    //사물함을 배정받는다
+    const assignedLocker: Locker = await this.lockerService.assignLocker(
+      orderId,
+      lockerPass,
+    );
+    if (!assignedLocker) {
+      console.log('dd');
+      await this.cancelOrder(orderId, '배정받을 수 있는 사물함이 없습니다.');
+      throw new HttpException(
+        '배정 받을 수 있는 사물함이 없음',
+        HttpStatus.GONE,
+      );
+    }
     await this.orderRepository.update(
       {
         orderId,
       },
       {
-        isApprove: true,
+        lockerId: assignedLocker.lockerId,
       },
     );
-
-    // 그런데 결제가 되었더라도 라커가 아직도 이 주문을 가지고있는지 확인한다.
-    if (order.assignedLocker.orderId !== orderId) {
-      //가지고 있지 않다면 결제를 취소한다 //이미 시간이 지나서 다른사람이 사용중이거나 비어있음.
-      await this.cancelOrder(
-        orderId,
-        '결제시간 지연으로 인한 사물함 할당 박탈',
-      );
-      throw new HttpException(
-        '결제 시간이 지났습니다 (결제를 취소합니다)',
-        HttpStatus.GATEWAY_TIMEOUT,
-      );
-    }
+    // 결제가 다 되었다면 장바구니를 모두 비워준다.
     await this.basketService.deleteAll(order.userId);
-
     // ++ 판매자에게 구매목록을 소켓으로 보내준다.
   }
 
+  //토스에서 실패요청을 했을때 내보내는 메서드이다//
   public async failedOrder(orderId: string, paymentKey: string) {
-    const order: Order = await this.orderRepository.findOne(
-      { orderId },
-      { relations: ['assignedLocker'] },
-    );
-    if (!order) {
-      throw new HttpException(
-        '잘못된 접근입니다 (존재하지 않는 주문서)',
-        HttpStatus.BAD_GATEWAY,
-      );
-    }
+    const order = await this.getOrderById(orderId, ['assignedLocker']);
     if (order.isApprove) {
       throw new HttpException(
         '이미 결제가 완료가 되었는데요',
@@ -214,31 +169,19 @@ export class OrderService {
         .toPromise();
       fetchedPaymentKey = response.data.paymentKey;
     } catch (e) {
-      console.log(e);
       // + 조회가 되지 않았다면
       throw new HttpException(
         '존재하지 않는 결제입니다',
         HttpStatus.BAD_REQUEST,
       );
     }
-    if (fetchedPaymentKey !== paymentKey) {
-      //같지 않다면 에러를 발생시킨다.
-      throw new HttpException(
-        '정상적인 결제 실패 선언이 아닙니다 (toss에서 보낸 요청이 아닌것으로 판단)',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    await this.orderisNotApproved(orderId);
+
+    // 어차피 결제가 안되었기 때문이 업데이트 할 필요 없음
+    // await this.updateOrderStatus(orderId, false);
   }
 
   public async cancelOrder(orderId: string, cancelReason: string) {
-    const order: Order = await this.orderRepository.findOne({ orderId });
-    if (!order) {
-      throw new HttpException(
-        '잘못된 접근입니다 (존재하지 않는 주문서)',
-        HttpStatus.BAD_GATEWAY,
-      );
-    }
+    const order = await this.getOrderById(orderId);
     if (!order.isApprove) {
       throw new HttpException(
         '결제가 되지 않았거나, 결제가 이미 취소된 주문서입니다',
@@ -261,50 +204,54 @@ export class OrderService {
         HttpStatus.BAD_REQUEST,
       );
     }
+    console.log('ddddd');
     //HTTP 요청으로 토스 결제를 취소한다
-    await this.httpService
-      .post(
-        `https://api.tosspayments.com/v1/payments/${fetchedPaymentKey}/cancel`,
-        {
-          cancelReason,
-        },
-      )
-      .toPromise();
-    await this.orderisNotApproved(orderId);
+    try {
+      await this.httpService
+        .post(
+          `https://api.tosspayments.com/v1/payments/${fetchedPaymentKey}/cancel`,
+          {
+            cancelReason,
+          },
+        )
+        .toPromise();
+    } catch (e) {
+      console.log(e);
+    }
+    await this.updateOrderStatus(orderId, false);
   }
 
-  public async orderisNotApproved(orderId: string) {
-    const order = await this.orderRepository.findOne({
-      where: {
-        orderId,
-      },
-      relations: ['assignedLocker'],
-    });
-    if (!order) {
-      throw new HttpException(
-        '존재하지 않는 주문서인데..',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-    const locker = order.assignedLocker;
-    //혹시나 해당 주문으로 활성화 된 라커가 있다면 라커를 바로 반환해준다.
-    if (locker.orderId === orderId) {
-      // 주문서에 있는 lockerId의 라커의 orderId가 현재 orderId로 똑같이 가지고 있는지를 확인한다.
-      await this.lockerService.returnLocker(order.lockerId);
-    }
-    // 해당 주문서에 결제 승인 상태 (isApprove)를 false로 바꾼다.
+  public async updateOrderStatus(orderId: string, isApprove: boolean) {
+    const order = await this.getOrderById(orderId);
+    // 해당 주문서에 결제 승인 상태 (isApprove)를 true로 바꾼다.
     await this.orderRepository.update(
       {
-        orderId,
+        orderId: order.orderId,
       },
       {
-        isApprove: false,
+        isApprove: isApprove,
       },
     );
   }
 
   public async getActivatedUserOrders(userId: number) {
     return await this.orderRepository.getActivatedUserOrders(userId);
+  }
+
+  private async getOrderById(orderId: string, relations: string[] = []) {
+    const order = await this.orderRepository.findOne({
+      where: {
+        orderId,
+      },
+      relations,
+    });
+    if (!order) {
+      throw new HttpException(
+        '존재하지 않는 주문서입니다!',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    return order;
   }
 }
 // pkw42094

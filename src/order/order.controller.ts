@@ -26,22 +26,20 @@ export class OrderController {
   //커스터머가 상품들을 주문할 때 사용하는 API 이다.
   @Post('/purchase')
   @Roles(RoleType.CUSTOMER)
-  public async purchase(
-    @GetUser() user: User,
-    @Body('password') password: string,
-  ) {
+  public async purchase(@GetUser() user: User) {
     // 매점 운영 시간 확인도 하기 x
-    return await this.orderService.purchase(user, password);
+    return await this.orderService.purchase(user);
   }
   //토스에서 결제가 성공했을 때 사용하는 API 이다.
   @Get('/purchaseSuccess')
   public async purchaseSuccessed(
     @Query('orderId') orderId: string,
     @Query('paymentKey') paymentKey: string,
+    @Query('lockerPass') lockerPass: string,
     @Res() res: Response,
   ) {
     console.log(orderId, paymentKey);
-    await this.orderService.successedOrder(orderId, paymentKey);
+    await this.orderService.successedOrder(orderId, paymentKey, lockerPass);
     res.redirect('http://localhost:3000');
   }
   //토스에서 결제가 실패했을 때 사용하는 API 이다.

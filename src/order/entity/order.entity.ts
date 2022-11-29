@@ -37,10 +37,14 @@ export class Order extends BaseEntity {
   @JoinColumn({ name: 'userId' })
   orderer: User;
 
-  @Column()
+  @Column({
+    nullable: true,
+  })
   lockerId: number;
 
-  @ManyToOne((type) => Locker, (locker) => locker.assignedOrders)
+  @ManyToOne((type) => Locker, (locker) => locker.assignedOrders, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'lockerId' })
   assignedLocker: Locker;
 
