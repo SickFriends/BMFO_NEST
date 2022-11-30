@@ -153,7 +153,7 @@ export class OrderService {
   }
 
   public async cancelOrder(orderId: string, cancelReason: string) {
-    const order = await this.getOrderById(orderId);
+    const order = await this.getOrderById(orderId, ['assignedLocker']);
     if (order.status !== orderStatus.APPROVAL) {
       throw new HttpException(
         '결제가 이미 되지 않은 항목을 취소 할 수 없습니다!',
@@ -163,7 +163,18 @@ export class OrderService {
     //***// 주문을 toss에서 조회한다 //***//
     let fetchedOrder = await this.fetchOrder(orderId);
     //***// 주문을 toss에서 조회한다 //***//
+
+    // orderStatus를 거부로 업데이트한다.
     await this.updateOrderStatus(orderId, orderStatus.REFUSAL);
+
+    //만약 결제를 취소하는데 아직도 라커에서 내 물건을 가지고 있다면
+    if (
+      order.assignedLocker.orderId === orderId &&
+      order.assignedLocker.isUsing === true
+    ) {
+      await this.lockerService.returnLocker(order.assignedLocker.lockerId);
+    }
+
     //HTTP 요청으로 토스 결제를 취소한다
     await this.requestCancelOrder(fetchedOrder.paymentKey, '');
   }
