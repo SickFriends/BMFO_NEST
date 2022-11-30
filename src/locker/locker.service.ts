@@ -60,7 +60,7 @@ export class LockerService {
       {
         lockerId,
       },
-      { isUsing: false, password: null, orderId: null },
+      { isUsing: false, isWating: false, password: null, orderId: null },
     );
   }
 
@@ -70,6 +70,17 @@ export class LockerService {
         lockerId,
       },
       { isUsing: true, password: lockerPass, isWating: false },
+    );
+  }
+
+  public async startWatingLocker(lockerId: number) {
+    await this.lockerRepository.update(
+      {
+        lockerId,
+      },
+      {
+        isWating: true,
+      },
     );
   }
 
@@ -85,15 +96,7 @@ export class LockerService {
       );
     }
     const assignedLocker = lockers[0];
-    await this.lockerRepository.update(
-      {
-        lockerId: assignedLocker.lockerId,
-      },
-      {
-        orderId,
-        isWating: true,
-      },
-    );
+    await this.startWatingLocker(assignedLocker.lockerId);
     //1분 30초 뒤에도 대기상태리면.. 대기 상태를 없애자
     this.taskService.addNewTimeout(
       `${assignedLocker.lockerId}-for-${orderId}-order`,
@@ -101,15 +104,7 @@ export class LockerService {
       async () => {
         const locker = await this.getLockerById(assignedLocker.lockerId);
         if (locker.isWating) {
-          await this.lockerRepository.update(
-            {
-              lockerId: assignedLocker.lockerId,
-            },
-            {
-              isWating: false,
-              orderId: null,
-            },
-          );
+          await this.returnLocker(assignedLocker.lockerId);
         }
       },
     );
