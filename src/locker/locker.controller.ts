@@ -25,10 +25,7 @@ export class LockerController {
     @Body('lockerId') lockerId: number,
     @Body('lockerPassword') lockerPassword: string,
   ) {
-    await this.lockerService.openForCustomer(lockerId, lockerPassword);
-    return {
-      SUCCESS: true,
-    };
+    return await this.lockerService.openForCustomer(lockerId, lockerPassword);
   }
 
   //라커 정보들을 불러오는 API이다.

@@ -28,10 +28,14 @@ export class LockerService {
       //라즈베리 파이 플라스크 서버에 오픈을 요청한다.
       this.httpService.post('http://10.150.149.50:5000/open', {});
       await this.returnLocker(lockerId);
-      return true;
+      return {
+        SUCCESS: true,
+      };
     }
     //비밀번호가 맞지 않다면...
-    return false;
+    return {
+      SUCCESS: false,
+    };
   }
 
   private async checkLockerPass(lockerId: number, password: string) {
@@ -73,13 +77,14 @@ export class LockerService {
     );
   }
 
-  public async startWatingLocker(lockerId: number) {
+  public async startWatingLocker(lockerId: number, orderId: string) {
     await this.lockerRepository.update(
       {
         lockerId,
       },
       {
         isWating: true,
+        orderId: orderId,
       },
     );
   }
@@ -100,7 +105,7 @@ export class LockerService {
     //1분 30초 뒤에도 대기상태리면.. 대기 상태를 없애자
     this.taskService.addNewTimeout(
       `${assignedLocker.lockerId}-for-${orderId}-order`,
-      90000,
+      130000,
       async () => {
         const locker = await this.getLockerById(assignedLocker.lockerId);
         if (locker.isWating) {
