@@ -13,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { OrderedProduct } from './orderedProduct.entity';
+import { orderStatus } from './orderStatus.type';
 
 @Entity()
 export class Order extends BaseEntity {
@@ -26,9 +27,11 @@ export class Order extends BaseEntity {
   amount: number;
 
   @Column({
-    default: false,
+    type: 'enum',
+    enum: orderStatus,
+    default: orderStatus.WATING,
   })
-  isApprove: boolean;
+  status: orderStatus;
 
   @Column()
   userId: number;

@@ -20,6 +20,11 @@ export class Locker extends BaseEntity {
   isUsing: boolean;
 
   @Column({
+    default: false,
+  })
+  isWating: boolean;
+
+  @Column({
     nullable: true,
   })
   orderId: string;

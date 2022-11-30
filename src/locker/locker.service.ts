@@ -4,6 +4,7 @@ import {
   HttpStatus,
   Injectable,
 } from '@nestjs/common';
+import { TaskService } from 'src/task/task.service';
 import { User } from 'src/user/entity/user.entity';
 import { Locker } from './entity/locker.entity';
 import { LockerRepository } from './repository/locker.repository';
@@ -12,6 +13,7 @@ import { LockerRepository } from './repository/locker.repository';
 export class LockerService {
   constructor(
     private lockerRepository: LockerRepository,
+    private taskService: TaskService,
     private readonly httpService: HttpService,
   ) {}
 
@@ -62,30 +64,59 @@ export class LockerService {
     );
   }
 
-  public async assignLocker(
-    orderId: string,
-    password: string,
-  ): Promise<Locker> {
-    const lockers: Locker[] = await this.lockerRepository.find({
-      isUsing: false,
-    });
-    if (lockers.length === 0) {
-      return null;
-    }
+  public async startUsingLocker(lockerId: number, lockerPass: string) {
     await this.lockerRepository.update(
       {
-        lockerId: lockers[0].lockerId,
+        lockerId,
+      },
+      { isUsing: true, password: lockerPass, isWating: false },
+    );
+  }
+
+  public async assignLocker(orderId: string): Promise<Locker> {
+    const lockers: Locker[] = await this.lockerRepository.find({
+      isUsing: false,
+      isWating: false,
+    });
+    if (lockers.length === 0) {
+      throw new HttpException(
+        '배정받을 수 있는 사물함이 없습니다',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    const assignedLocker = lockers[0];
+    await this.lockerRepository.update(
+      {
+        lockerId: assignedLocker.lockerId,
       },
       {
         orderId,
-        isUsing: true,
-        password,
+        isWating: true,
+      },
+    );
+    //1분 30초 뒤에도 대기상태리면.. 대기 상태를 없애자
+    this.taskService.addNewTimeout(
+      `${assignedLocker.lockerId}-for-${orderId}-order`,
+      90000,
+      async () => {
+        const locker = await this.getLockerById(assignedLocker.lockerId);
+        if (locker.isWating) {
+          await this.lockerRepository.update(
+            {
+              lockerId: assignedLocker.lockerId,
+            },
+            {
+              isWating: false,
+              orderId: null,
+            },
+          );
+        }
       },
     );
     return await this.lockerRepository.findOne({
       select: ['lockerId', 'isUsing'],
       where: {
-        lockerId: lockers[0].lockerId,
+        lockerId: assignedLocker.lockerId,
       },
     });
   }
@@ -93,7 +124,10 @@ export class LockerService {
   public async getLockerById(lockerId: number) {
     const locker = await this.lockerRepository.findOne(lockerId);
     if (!locker) {
-      throw new HttpException('', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        `${lockerId}번 라커는 존재하지 않습니다.`,
+        HttpStatus.NOT_FOUND,
+      );
     }
     return locker;
   }
