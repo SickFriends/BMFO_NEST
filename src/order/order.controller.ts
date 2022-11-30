@@ -28,7 +28,7 @@ export class OrderController {
   @Roles(RoleType.CUSTOMER)
   public async purchase(@GetUser() user: User) {
     // 매점 운영 시간 확인도 하기 x
-    return await this.orderService.purchase(user);
+    return await this.orderService.makeOrder(user);
   }
   //토스에서 결제가 성공했을 때 사용하는 API 이다.
   @Get('/purchaseSuccess')
@@ -46,10 +46,9 @@ export class OrderController {
   @Get('/purchaseFail')
   public async purchaseFailed(
     @Query('orderId') orderId: string,
-    @Query('paymentKey') paymentKey: string,
     @Res() res: Response,
   ) {
-    await this.orderService.failedOrder(orderId, paymentKey);
+    await this.orderService.failedOrder(orderId);
     res.redirect('http://localhost:3000');
   }
 

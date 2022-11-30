@@ -52,7 +52,7 @@ export class OrderService {
   }
 
   //주문서를 만드는 메서드이다
-  public async purchase(user: User) {
+  public async makeOrder(user: User) {
     const userBasket = await this.basketService.getShoppingBasket(user);
     if (!userBasket.length) {
       throw new HttpException(
@@ -120,6 +120,7 @@ export class OrderService {
     // 잘 조회가 된다면 일단, 해당 주문서에 결제를 승인한다.
     await this.updateOrderStatus(orderId, orderStatus.APPROVAL);
 
+    // 주문할때 할당받은 라커가 아직도 내 주문을 가지고 있는지 확인한다.
     if (order.assignedLocker.orderId !== orderId) {
       await this.cancelOrder(
         orderId,
@@ -130,7 +131,6 @@ export class OrderService {
         HttpStatus.REQUEST_TIMEOUT,
       );
     }
-
     //사물함을 사용한다고 선언한다.
     await this.lockerService.startUsingLocker(order.lockerId, lockerPass);
     // 결제가 다 되었다면 장바구니를 모두 비워준다.
@@ -139,15 +139,15 @@ export class OrderService {
   }
 
   //토스에서 실패요청을 했을때 내보내는 메서드이다//
-  public async failedOrder(orderId: string, paymentKey: string) {
+  public async failedOrder(orderId: string) {
     const order = await this.getOrderById(orderId, ['assignedLocker']);
+    await this.fetchOrder(orderId);
     if (order.status !== orderStatus.WATING) {
       throw new HttpException(
         '이미 처리가 완료가 된 주문서입니다.',
         HttpStatus.BAD_REQUEST,
       );
     }
-    await this.fetchOrder(orderId);
     //여기서 결제대기상태를 실패로 업데이트한다.
     this.updateOrderStatus(orderId, orderStatus.REFUSAL);
   }
@@ -163,10 +163,6 @@ export class OrderService {
     //***// 주문을 toss에서 조회한다 //***//
     let fetchedOrder = await this.fetchOrder(orderId);
     //***// 주문을 toss에서 조회한다 //***//
-
-    // orderStatus를 거부로 업데이트한다.
-    await this.updateOrderStatus(orderId, orderStatus.REFUSAL);
-
     //만약 결제를 취소하는데 아직도 라커에서 내 물건을 가지고 있다면
     if (
       order.assignedLocker.orderId === orderId &&
@@ -175,8 +171,10 @@ export class OrderService {
       await this.lockerService.returnLocker(order.assignedLocker.lockerId);
     }
 
-    //HTTP 요청으로 토스 결제를 취소한다
-    await this.requestCancelOrder(fetchedOrder.paymentKey, '');
+    // orderStatus를 거부로 업데이트한다.
+    await this.updateOrderStatus(orderId, orderStatus.CANCELED);
+    //HTTP 요청으로 토스 한테도 결제를 취소 요청한다
+    await this.requestCancelOrder(fetchedOrder.paymentKey, cancelReason);
   }
 
   public async updateOrderStatus(orderId: string, orderStatus: orderStatus) {
