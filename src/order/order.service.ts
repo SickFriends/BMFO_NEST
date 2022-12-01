@@ -127,7 +127,7 @@ export class OrderService {
       const order = await this.getOrderById(orderId);
       if (order.status === orderStatus.WATING) {
         await this.lockerService.returnLocker(order.lockerId);
-        await this.updateOrderStatus(orderId, orderStatus.REFUSAL);
+        await this.updateOrderStatus(orderId, orderStatus.FAILED);
       }
     });
     return order;
@@ -190,7 +190,7 @@ export class OrderService {
     }
     //여기서 결제대기상태를 실패로 업데이트한다.
     await this.lockerService.returnLocker(order.lockerId);
-    this.updateOrderStatus(orderId, orderStatus.REFUSAL);
+    this.updateOrderStatus(orderId, orderStatus.FAILED);
   }
 
   public async cancelOrder(orderId: string, cancelReason: string) {
