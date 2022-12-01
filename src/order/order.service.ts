@@ -126,8 +126,8 @@ export class OrderService {
     this.taskService.addNewTimeout(`${orderId}`, 90000, async () => {
       const order = await this.getOrderById(orderId);
       if (order.status === orderStatus.WATING) {
-        await this.updateOrderStatus(orderId, orderStatus.REFUSAL);
         await this.lockerService.returnLocker(order.lockerId);
+        await this.updateOrderStatus(orderId, orderStatus.REFUSAL);
       }
     });
     return order;

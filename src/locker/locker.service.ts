@@ -108,16 +108,6 @@ export class LockerService {
     const assignedLocker = lockers[0];
     await this.startWatingLocker(assignedLocker.lockerId, orderId);
     //1분 30초 뒤에도 대기상태리면.. 대기 상태를 없애자
-    this.taskService.addNewTimeout(
-      `${assignedLocker.lockerId}-for-${orderId}-order`,
-      90000,
-      async () => {
-        const locker = await this.getLockerById(assignedLocker.lockerId);
-        if (locker.isWating) {
-          await this.returnLocker(assignedLocker.lockerId);
-        }
-      },
-    );
     return await this.lockerRepository.findOne({
       select: ['lockerId', 'isUsing'],
       where: {
