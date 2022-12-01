@@ -27,6 +27,7 @@ export class OrderController {
   @Post('/purchase')
   @Roles(RoleType.CUSTOMER)
   public async purchase(@GetUser() user: User) {
+    console.log();
     // 매점 운영 시간 확인도 하기 x
     return await this.orderService.makeOrder(user);
   }
@@ -64,18 +65,36 @@ export class OrderController {
   }
 
   @Get('/getOrderDetail')
+  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
   public async getOrderDetail(@Query('orderId') orderId: string) {
     return await this.orderService.getOrderDetail(orderId);
   }
 
   @Get('/getMyOrders')
+  @Roles(RoleType.CUSTOMER)
   public async getMyOrders(@GetUser() user: User, @Query('page') page: number) {
-    return await this.orderService.getOrderList(user.userId, page);
+    return await this.orderService.getUserOrderList(user.userId, page);
+  }
+
+  @Get('/getOrdersAboutLocker')
+  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
+  public async getLockerOrders(
+    @Query('lockerId') lockerId: number,
+    @Query('page') page: number,
+  ) {
+    console.log(lockerId, page, '-------------------------');
+    return await this.orderService.getLockerOrderList(lockerId, page);
   }
 
   @Get('/getMyActivatedOrders')
   @Roles(RoleType.CUSTOMER)
   public async getMyActivatedOrders(@GetUser() user: User) {
     return await this.orderService.getActivatedUserOrders(user.userId);
+  }
+
+  @Get('/getAllActivatedOrders')
+  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
+  public async getAllActivatedOrders() {
+    return await this.orderService.getActivatedAllOrders();
   }
 }

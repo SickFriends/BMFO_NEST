@@ -19,22 +19,27 @@ export class LockerService {
 
   public async openForSeller(lockerId: number) {
     //라즈베리파이 플라스크서버에 오픈을 요청한다.
-    this.httpService.post('http://10.150.149.50:5000/open', {});
+    await this.httpService
+      .post('http://10.150.151.172:5000/openForSeller', {
+        lockerId: lockerId,
+      })
+      .toPromise();
   }
 
   public async openForCustomer(lockerId: number, password: string) {
     const isSame = await this.checkLockerPass(lockerId, password);
     if (isSame) {
       //라즈베리 파이 플라스크 서버에 오픈을 요청한다.
-      this.httpService.post('http://10.150.149.50:5000/open', {});
       await this.returnLocker(lockerId);
       return {
         SUCCESS: true,
+        showData: 'https://naver.com',
       };
     }
     //비밀번호가 맞지 않다면...
     return {
       SUCCESS: false,
+      showData: 'https://naver.com',
     };
   }
 
@@ -101,7 +106,7 @@ export class LockerService {
       );
     }
     const assignedLocker = lockers[0];
-    await this.startWatingLocker(assignedLocker.lockerId);
+    await this.startWatingLocker(assignedLocker.lockerId, orderId);
     //1분 30초 뒤에도 대기상태리면.. 대기 상태를 없애자
     this.taskService.addNewTimeout(
       `${assignedLocker.lockerId}-for-${orderId}-order`,
@@ -119,6 +124,10 @@ export class LockerService {
         lockerId: assignedLocker.lockerId,
       },
     });
+  }
+
+  public async getLockers() {
+    return await this.lockerRepository.find();
   }
 
   public async getLockerById(lockerId: number) {

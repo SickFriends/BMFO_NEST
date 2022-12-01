@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { Roles } from 'src/auth/decorator/role.decorator';
 import { GetUser } from 'src/auth/decorator/userinfo.decorator';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -10,12 +18,26 @@ import { LockerService } from './locker.service';
 @Controller('locker')
 export class LockerController {
   constructor(private lockerService: LockerService) {}
+  //라커 정보들을 불러오는 API이다.
+  @Get('/')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
+  public async getAllLockers() {
+    return await this.lockerService.getLockers();
+  }
 
+  @Post('/lockerDetail')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
+  public async getLockerDetail(@Body('lockerId') lockerId: number) {
+    return await this.lockerService.getLockerById(lockerId);
+  }
   // 판매자가 상품을 제공하기 위해 또는 특정한 이유로 라커문을 여는 경우에 사용하는 API이다.
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleType.SELLER)
+  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
   @Post('/openForProviding')
   public async openForProviding(@Query('lockerId') lockerId: number) {
+    console.log(lockerId);
     await this.lockerService.openForSeller(lockerId);
   }
 
@@ -27,10 +49,4 @@ export class LockerController {
   ) {
     return await this.lockerService.openForCustomer(lockerId, lockerPassword);
   }
-
-  //라커 정보들을 불러오는 API이다.
-  @Get('')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleType.CUSTOMER)
-  public async getAllLockers() {}
 }

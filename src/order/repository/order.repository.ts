@@ -16,4 +16,16 @@ export class OrderRepository extends Repository<Order> {
       )
       .getRawMany();
   }
+  async getActivatedAllOrders() {
+    return await this.createQueryBuilder('Order')
+      .select(`L.lockerId`)
+      .addSelect('Order.orderId', 'orderId')
+      .addSelect('Order.orderedAt', 'orderedAt')
+      .innerJoin(
+        (qb) => qb.from(Locker, 'Locker').select().where(`isUsing=1`),
+        'L',
+        'L.lockerId=Order.lockerId AND Order.orderId = L.orderId',
+      )
+      .getRawMany();
+  }
 }

@@ -32,17 +32,43 @@ export class OrderService {
   private headersRequest = {};
 
   //페이지네이션 추가하기
-  public async getOrderList(userId: number, page: number = 1) {
-    const [orders, count] = await this.orderRepository.findAndCount({
+  public async getUserOrderList(userId: number, page: number = 1) {
+    const orders = await this.orderRepository.find({
       where: {
         userId,
       },
       take: 5,
-      skip: page - 1,
+      skip: (page - 1) * 5,
+      relations: ['orderedProducts'],
+    });
+    const count = await this.orderRepository.count({
+      where: {
+        userId,
+      },
     });
     return {
       orders,
-      maxPage: (count / 5).toFixed(0),
+      maxPage: parseInt((count / 5).toFixed(0)) + (count % 5) === 0 ? 0 : 1,
+    };
+  }
+
+  public async getLockerOrderList(lockerId: number, page: number = 1) {
+    const orders = await this.orderRepository.find({
+      where: {
+        lockerId,
+      },
+      relations: ['orderedProducts'],
+      take: 5,
+      skip: (page - 1) * 5,
+    });
+    const count = await this.orderRepository.count({
+      where: {
+        lockerId,
+      },
+    });
+    return {
+      orders,
+      maxPage: parseInt((count / 5).toFixed(0)) + (count % 5) ? 2 : 1,
     };
   }
 
@@ -192,6 +218,10 @@ export class OrderService {
 
   public async getActivatedUserOrders(userId: number) {
     return await this.orderRepository.getActivatedUserOrders(userId);
+  }
+
+  public async getActivatedAllOrders() {
+    return await this.orderRepository.getActivatedAllOrders();
   }
 
   private async getOrderById(orderId: string, relations: string[] = []) {
