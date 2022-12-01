@@ -23,6 +23,7 @@ export class OrderService {
     private lockerService: LockerService,
     private basketService: BasketService,
     private httpService: HttpService,
+    private taskService: TaskService,
   ) {
     this.headersRequest = {
       Authorization: `Basic dGVzdF9za19QMjR4TGVhNXpWQTBSQk5ScXA2M1FBTVlOd1c2Og==`,
@@ -36,6 +37,9 @@ export class OrderService {
     const orders = await this.orderRepository.find({
       where: {
         userId,
+      },
+      order: {
+        orderedAt: 'DESC',
       },
       take: 5,
       skip: (page - 1) * 5,
@@ -54,6 +58,9 @@ export class OrderService {
 
   public async getLockerOrderList(lockerId: number, page: number = 1) {
     const orders = await this.orderRepository.find({
+      order: {
+        orderedAt: 'DESC',
+      },
       where: {
         lockerId,
       },
@@ -116,6 +123,13 @@ export class OrderService {
         });
       }),
     );
+    this.taskService.addNewTimeout(`${orderId}`, 90000, async () => {
+      const order = await this.getOrderById(orderId);
+      if (order.status === orderStatus.WATING) {
+        await this.updateOrderStatus(orderId, orderStatus.REFUSAL);
+        await this.lockerService.returnLocker(order.lockerId);
+      }
+    });
     return order;
   }
 
@@ -166,7 +180,7 @@ export class OrderService {
 
   //토스에서 실패요청을 했을때 내보내는 메서드이다//
   public async failedOrder(orderId: string) {
-    const order = await this.getOrderById(orderId, ['assignedLocker']);
+    const order = await this.getOrderById(orderId);
     await this.fetchOrder(orderId);
     if (order.status !== orderStatus.WATING) {
       throw new HttpException(
@@ -175,6 +189,7 @@ export class OrderService {
       );
     }
     //여기서 결제대기상태를 실패로 업데이트한다.
+    await this.lockerService.returnLocker(order.lockerId);
     this.updateOrderStatus(orderId, orderStatus.REFUSAL);
   }
 

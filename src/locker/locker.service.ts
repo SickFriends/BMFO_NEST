@@ -110,7 +110,7 @@ export class LockerService {
     //1분 30초 뒤에도 대기상태리면.. 대기 상태를 없애자
     this.taskService.addNewTimeout(
       `${assignedLocker.lockerId}-for-${orderId}-order`,
-      130000,
+      90000,
       async () => {
         const locker = await this.getLockerById(assignedLocker.lockerId);
         if (locker.isWating) {
