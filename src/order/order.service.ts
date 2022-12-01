@@ -52,7 +52,10 @@ export class OrderService {
     });
     return {
       orders,
-      maxPage: parseInt((count / 5).toFixed(0)) + (count % 5) === 0 ? 0 : 1,
+      maxPage:
+        count % 5 === 0
+          ? parseInt((count / 5).toFixed(0))
+          : parseInt((count / 5).toFixed(0)) + 1,
     };
   }
 
@@ -75,7 +78,10 @@ export class OrderService {
     });
     return {
       orders,
-      maxPage: parseInt((count / 5).toFixed(0)) + (count % 5) ? 2 : 1,
+      maxPage:
+        count % 5 === 0
+          ? parseInt((count / 5).toFixed(0))
+          : parseInt((count / 5).toFixed(0)) + 1,
     };
   }
 

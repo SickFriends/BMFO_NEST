@@ -82,7 +82,6 @@ export class OrderController {
     @Query('lockerId') lockerId: number,
     @Query('page') page: number,
   ) {
-    console.log(lockerId, page, '-------------------------');
     return await this.orderService.getLockerOrderList(lockerId, page);
   }
 
