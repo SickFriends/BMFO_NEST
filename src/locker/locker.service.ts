@@ -98,6 +98,7 @@ export class LockerService {
     const lockers: Locker[] = await this.lockerRepository.find({
       isUsing: false,
       isWating: false,
+      isAvailable: true,
     });
     if (lockers.length === 0) {
       throw new HttpException(

@@ -17,6 +17,11 @@ export class Locker extends BaseEntity {
   @Column({
     default: false,
   })
+  isAvailable: boolean;
+
+  @Column({
+    default: false,
+  })
   isUsing: boolean;
 
   @Column({

@@ -27,7 +27,6 @@ export class OrderController {
   @Post('/purchase')
   @Roles(RoleType.CUSTOMER)
   public async purchase(@GetUser() user: User) {
-    console.log();
     // 매점 운영 시간 확인도 하기 x
     return await this.orderService.makeOrder(user);
   }

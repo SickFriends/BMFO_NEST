@@ -21,7 +21,7 @@ export class LockerController {
   //라커 정보들을 불러오는 API이다.
   @Get('/')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
+  // @Roles(RoleType.SELLER, RoleType.CUSTOMER)
   public async getAllLockers() {
     return await this.lockerService.getLockers();
   }
