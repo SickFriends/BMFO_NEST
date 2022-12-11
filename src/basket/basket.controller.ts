@@ -14,19 +14,20 @@ import { PutProductRequestDto } from './dto/PutProductRequest.dto';
 export class BasketController {
   constructor(private basketService: BasketService) {}
 
-  @Get('/getShoppingBasket')
-  public async getMyShoppingBasket(@GetUser() user: User) {
-    return await this.basketService.getShoppingBasket(user);
-  }
-
   @Post('/putProduct')
   public async putProduct(
     @GetUser() user: User,
     @Body() req: PutProductRequestDto,
   ) {
     req.ownerId = user.userId;
+    console.log(user.userId);
     await this.basketService.putProduct(req);
     return '성공';
+  }
+
+  @Get('/getShoppingBasket')
+  public async getMyShoppingBasket(@GetUser() user: User) {
+    return await this.basketService.getShoppingBasket(user);
   }
 
   @Post('/deleteBasketProduct')

@@ -20,7 +20,7 @@ export class LockerController {
   constructor(private lockerService: LockerService) {}
   //라커 정보들을 불러오는 API이다.
   @Get('/')
-  @UseGuards(AuthGuard, RolesGuard)
+  // @UseGuards(AuthGuard, RolesGuard)
   // @Roles(RoleType.SELLER, RoleType.CUSTOMER)
   public async getAllLockers() {
     return await this.lockerService.getLockers();
@@ -47,6 +47,7 @@ export class LockerController {
     @Body('lockerId') lockerId: number,
     @Body('lockerPassword') lockerPassword: string,
   ) {
+    console.log(lockerPassword);
     return await this.lockerService.openForCustomer(lockerId, lockerPassword);
   }
 }

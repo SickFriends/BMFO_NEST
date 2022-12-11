@@ -20,37 +20,43 @@ export class LockerService {
   public async openForSeller(lockerId: number) {
     //라즈베리파이 플라스크서버에 오픈을 요청한다.
     await this.httpService
-      .post('http://10.150.151.172:5000/openForSeller', {
+      .post('http://192.168.109.68:5000/openForSeller', {
         lockerId: lockerId,
       })
       .toPromise();
   }
 
   public async openForCustomer(lockerId: number, password: string) {
+    const locker = await this.getLockerById(lockerId);
     const isSame = await this.checkLockerPass(lockerId, password);
     if (isSame) {
       //라즈베리 파이 플라스크 서버에 오픈을 요청한다.
       await this.returnLocker(lockerId);
+      await this.httpService
+        .post('http://192.168.109.68:5000/openForSeller', {
+          lockerId: lockerId,
+        })
+        .toPromise();
       return {
         SUCCESS: true,
-        showData: 'https://naver.com',
+        orderId: locker.orderId,
       };
     }
     //비밀번호가 맞지 않다면...
     return {
       SUCCESS: false,
-      showData: 'https://naver.com',
     };
   }
 
   private async checkLockerPass(lockerId: number, password: string) {
+    console.log('1');
     const locker: Locker = await this.lockerRepository.findOne({
       where: {
         lockerId,
       },
       select: ['password', 'lockerId', 'isUsing'],
     });
-    console.log(locker);
+    console.log('2');
     if (!locker.isUsing) {
       //이 때, 현재 맡겨놓은 물건이 없는 라커이다.
       throw new HttpException(
@@ -58,6 +64,7 @@ export class LockerService {
         HttpStatus.BAD_GATEWAY,
       );
     }
+    console.log('3');
     if (locker.password === password) {
       return true;
     }
@@ -69,7 +76,7 @@ export class LockerService {
       {
         lockerId,
       },
-      { isUsing: false, isWating: false, password: null, orderId: null },
+      { isUsing: false, isWating: false, password: '', orderId: null },
     );
   }
 

@@ -41,19 +41,19 @@ export class OrderService {
       order: {
         orderedAt: 'DESC',
       },
-      take: 5,
-      skip: (page - 1) * 5,
-      relations: ['orderedProducts'],
+      take: 11,
+      skip: (page - 1) * 11,
     });
     const count = await this.orderRepository.count({
       where: {
         userId,
       },
     });
+    console.log(count);
     return {
       orders,
       maxPage:
-        count % 5 === 0
+        count % 10 == 0
           ? parseInt((count / 5).toFixed(0))
           : parseInt((count / 5).toFixed(0)) + 1,
     };
@@ -93,6 +93,7 @@ export class OrderService {
   //주문서를 만드는 메서드이다
   public async makeOrder(user: User) {
     const userBasket = await this.basketService.getShoppingBasket(user);
+    console.log(user);
     if (!userBasket.length) {
       throw new HttpException(
         '장바구니에 물건이 아무것도 없습니다',
@@ -242,7 +243,10 @@ export class OrderService {
   }
 
   public async getActivatedAllOrders() {
-    return await this.orderRepository.getActivatedAllOrders();
+    const allActivatedOrders =
+      await this.orderRepository.getActivatedAllOrders();
+    console.log(allActivatedOrders);
+    return allActivatedOrders;
   }
 
   private async getOrderById(orderId: string, relations: string[] = []) {

@@ -36,7 +36,8 @@ export class Locker extends BaseEntity {
 
   @Column({
     select: false,
-    default: '',
+    default: null,
+    nullable: true,
   })
   password: string;
 

@@ -19,12 +19,12 @@ import { RoleType } from 'src/user/role-type';
 import { OrderService } from './order.service';
 
 @Controller('order')
-@UseGuards(AuthGuard, RolesGuard)
 export class OrderController {
   constructor(private orderService: OrderService) {}
 
   //커스터머가 상품들을 주문할 때 사용하는 API 이다.
   @Post('/purchase')
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.CUSTOMER)
   public async purchase(@GetUser() user: User) {
     // 매점 운영 시간 확인도 하기 x
@@ -32,6 +32,7 @@ export class OrderController {
   }
   //토스에서 결제가 성공했을 때 사용하는 API 이다.
   @Get('/purchaseSuccess')
+  @UseGuards(AuthGuard)
   public async purchaseSuccessed(
     @Query('orderId') orderId: string,
     @Query('paymentKey') paymentKey: string,
@@ -44,6 +45,7 @@ export class OrderController {
   }
   //토스에서 결제가 실패했을 때 사용하는 API 이다.
   @Get('/purchaseFail')
+  @UseGuards(AuthGuard)
   public async purchaseFailed(
     @Query('orderId') orderId: string,
     @Res() res: Response,
@@ -54,6 +56,7 @@ export class OrderController {
 
   //판매자가 결제 취소 할 때 사용하는 API 이다.
   @Post('/cancelPurchase')
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.SELLER)
   public async cancelPurchase(
     @Query('ofderId') orderId: string,
@@ -64,18 +67,26 @@ export class OrderController {
   }
 
   @Get('/getOrderDetail')
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.SELLER, RoleType.CUSTOMER)
   public async getOrderDetail(@Query('orderId') orderId: string) {
     return await this.orderService.getOrderDetail(orderId);
   }
 
+  @Get('/getOrderDetailForMachine')
+  public async getOrderDetailForMachine(@Query('orderId') orderId: string) {
+    return await this.orderService.getOrderDetail(orderId);
+  }
+
   @Get('/getMyOrders')
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.CUSTOMER)
   public async getMyOrders(@GetUser() user: User, @Query('page') page: number) {
     return await this.orderService.getUserOrderList(user.userId, page);
   }
 
   @Get('/getOrdersAboutLocker')
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.SELLER, RoleType.CUSTOMER)
   public async getLockerOrders(
     @Query('lockerId') lockerId: number,
@@ -85,13 +96,15 @@ export class OrderController {
   }
 
   @Get('/getMyActivatedOrders')
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.CUSTOMER)
   public async getMyActivatedOrders(@GetUser() user: User) {
     return await this.orderService.getActivatedUserOrders(user.userId);
   }
 
   @Get('/getAllActivatedOrders')
-  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleType.SELLER)
   public async getAllActivatedOrders() {
     return await this.orderService.getActivatedAllOrders();
   }
