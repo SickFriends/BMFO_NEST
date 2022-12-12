@@ -22,10 +22,10 @@ import { ProductService } from './product.service';
 @Controller('product')
 export class ProductController {
   constructor(private productService: ProductService) {}
-  //상품 추가
+  //판매자 입장에서 상품 추가할 수 있는 API이다.
   @Post('addProduct')
   @UseGuards(AuthGuard)
-  // @Roles(RoleType.SELLER)
+  @Roles(RoleType.SELLER)
   @UseInterceptors(FilesInterceptor('img', 1, multerOptions('products')))
   async addProduct(
     @UploadedFiles() img: Express.Multer.File[],
@@ -35,7 +35,7 @@ export class ProductController {
     return await this.productService.addProduct(addProductDto);
   }
 
-  //상품 리스트
+  //상품 리스트를 불러오는 API이다.
   @Get('list')
   async getProductList() {
     return await this.productService.getProducts();
@@ -44,7 +44,6 @@ export class ProductController {
   //상품 찾기
   @Get('/searchByNameInAll')
   async searchProductByName(@Query('name') name: string) {
-    console.log(name);
     return await this.productService.searchByNameInAll(name);
   }
 

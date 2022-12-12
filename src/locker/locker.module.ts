@@ -4,6 +4,7 @@ import { LockerController } from './locker.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LockerRepository } from './repository/locker.repository';
 import { TaskModule } from 'src/task/task.module';
+import { OrderModule } from 'src/order/order.module';
 
 @Module({
   imports: [

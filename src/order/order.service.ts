@@ -91,7 +91,7 @@ export class OrderService {
   }
 
   //주문서를 만드는 메서드이다
-  public async makeOrder(user: User) {
+  public async makeOrder(user: User, lockerPassword: string) {
     const userBasket = await this.basketService.getShoppingBasket(user);
     console.log(user);
     if (!userBasket.length) {
@@ -106,7 +106,10 @@ export class OrderService {
     newOrder.orderedAt = new Date();
     newOrder.userId = user.userId;
     newOrder.orderId = orderId;
-    const assignedLocker = await this.lockerService.assignLocker(orderId);
+    const assignedLocker = await this.lockerService.assignLocker(
+      orderId,
+      lockerPassword,
+    );
     newOrder.lockerId = assignedLocker.lockerId;
     userBasket.map((productInfo) => {
       totalPrice += productInfo.count * productInfo.product.price;
@@ -132,6 +135,7 @@ export class OrderService {
     );
     this.taskService.addNewTimeout(`${orderId}`, 90000, async () => {
       const order = await this.getOrderById(orderId);
+      //주문이 1분 30초 후에도 진행되지 않았다면..
       if (order.status === orderStatus.WATING) {
         await this.lockerService.returnLocker(order.lockerId);
         await this.updateOrderStatus(orderId, orderStatus.FAILED);
@@ -179,7 +183,9 @@ export class OrderService {
       );
     }
     //사물함을 사용한다고 선언한다.
-    await this.lockerService.startUsingLocker(order.lockerId, lockerPass);
+    // 사물함을 바로 사용한다고 선언하지 않는다 *아키텍처 업데이트
+    // 판매자가 사물함을 열고 물건이 들어간 경우에만 startUsingLocker을 실행한다/
+    //await this.lockerService.startUsingLocker(order.lockerId, lockerPass);
     // 결제가 다 되었다면 장바구니를 모두 비워준다.
     await this.basketService.deleteAll(order.userId);
     // ++ 판매자에게 구매목록을 소켓으로 보내준다.
@@ -281,6 +287,7 @@ export class OrderService {
         HttpStatus.BAD_REQUEST,
       );
     }
+    // start
     //***// 주문을 toss에서 조회한다 //***//
   }
   private async requestCancelOrder(paymentKey: string, cancelReason: string) {

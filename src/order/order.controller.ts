@@ -26,13 +26,18 @@ export class OrderController {
   @Post('/purchase')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.CUSTOMER)
-  public async purchase(@GetUser() user: User) {
+  public async purchase(
+    @GetUser() user: User,
+    @Body('lockerPassword') lockerPassword: string,
+  ) {
     // 매점 운영 시간 확인도 하기 x
-    return await this.orderService.makeOrder(user);
+    return await this.orderService.makeOrder(user, lockerPassword);
   }
+
   //토스에서 결제가 성공했을 때 사용하는 API 이다.
   @Get('/purchaseSuccess')
   @UseGuards(AuthGuard)
+  @Roles(RoleType.CUSTOMER)
   public async purchaseSuccessed(
     @Query('orderId') orderId: string,
     @Query('paymentKey') paymentKey: string,
@@ -43,9 +48,11 @@ export class OrderController {
     await this.orderService.successedOrder(orderId, paymentKey, lockerPass);
     res.redirect('http://localhost:3000');
   }
+
   //토스에서 결제가 실패했을 때 사용하는 API 이다.
   @Get('/purchaseFail')
   @UseGuards(AuthGuard)
+  @Roles(RoleType.CUSTOMER)
   public async purchaseFailed(
     @Query('orderId') orderId: string,
     @Res() res: Response,
@@ -66,6 +73,7 @@ export class OrderController {
     return await this.orderService.cancelOrder(orderId, reason);
   }
 
+  // 주문에 대한 자세한 정보를 불러오는 API이다.
   @Get('/getOrderDetail')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.SELLER, RoleType.CUSTOMER)
@@ -73,11 +81,7 @@ export class OrderController {
     return await this.orderService.getOrderDetail(orderId);
   }
 
-  @Get('/getOrderDetailForMachine')
-  public async getOrderDetailForMachine(@Query('orderId') orderId: string) {
-    return await this.orderService.getOrderDetail(orderId);
-  }
-
+  //해당하는 유저에 대한 '주문 이력들'을 불러오는 API이다.
   @Get('/getMyOrders')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.CUSTOMER)
@@ -85,9 +89,10 @@ export class OrderController {
     return await this.orderService.getUserOrderList(user.userId, page);
   }
 
+  //특정 사물함에 대한 모든 주문들을 불러오는 API이다.
   @Get('/getOrdersAboutLocker')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleType.SELLER, RoleType.CUSTOMER)
+  @Roles(RoleType.CUSTOMER)
   public async getLockerOrders(
     @Query('lockerId') lockerId: number,
     @Query('page') page: number,
@@ -95,6 +100,7 @@ export class OrderController {
     return await this.orderService.getLockerOrderList(lockerId, page);
   }
 
+  //해당하는 유저에 대한 '활성화 된' 주문들을 불러오는 API이다.
   @Get('/getMyActivatedOrders')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.CUSTOMER)
@@ -102,10 +108,17 @@ export class OrderController {
     return await this.orderService.getActivatedUserOrders(user.userId);
   }
 
+  //주문자 입장에 대한 '활성화 된' 주문들을 불러오는 API이다.
   @Get('/getAllActivatedOrders')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleType.SELLER)
   public async getAllActivatedOrders() {
     return await this.orderService.getActivatedAllOrders();
+  }
+
+  //키오스크 부분에서 어떤것을 보관했는지, 언제부터, 언제까지 보관했는지에 대해서 정보를 가져오기 위해 요청하는 API이다.
+  @Get('/getOrderDetailForMachine')
+  public async getOrderDetailForMachine(@Query('orderId') orderId: string) {
+    return await this.orderService.getOrderDetail(orderId);
   }
 }
