@@ -49,7 +49,6 @@ export class OrderService {
         userId,
       },
     });
-    console.log(count);
     return {
       orders,
       maxPage:
@@ -164,8 +163,6 @@ export class OrderService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    // 잘 조회가 된다면 일단, 해당 주문서에 결제를 승인한다.
-    await this.updateOrderStatus(orderId, orderStatus.APPROVAL);
 
     // 주문할때 할당받은 라커가 아직도 내 주문을 가지고 있는지 확인한다.
     if (order.assignedLocker.orderId !== orderId) {
@@ -178,6 +175,17 @@ export class OrderService {
         HttpStatus.REQUEST_TIMEOUT,
       );
     }
+
+    //조회가 잘 되고나서 결제승인을 때려준다.
+    await this.approveOrderToToss({
+      userId: order.userId,
+      amount: order.amount,
+      paymentKey,
+      orderId,
+    });
+    // 해당 주문서에 상태를 승인으로 변경.
+    await this.updateOrderStatus(orderId, orderStatus.APPROVAL);
+
     //사물함을 사용한다고 선언한다.
     await this.lockerService.startUsingLocker(order.lockerId, lockerPass);
     // 결제가 다 되었다면 장바구니를 모두 비워준다.
@@ -283,15 +291,42 @@ export class OrderService {
     }
     //***// 주문을 toss에서 조회한다 //***//
   }
+
+  private async approveOrderToToss({ paymentKey, amount, userId, orderId }) {
+    try {
+      this.httpService.post(
+        `https://api.tosspayments.com/v1/payments/confirm`,
+        {
+          paymentKey,
+          amount,
+          customerKey: `-${userId}`,
+          orderId,
+        },
+        {
+          headers: this.headersRequest,
+        },
+      );
+    } catch (e) {
+      throw new HttpException(
+        '결제 승인에 문제가 발생했습니다',
+        HttpStatus.NOT_MODIFIED,
+      );
+    }
+  }
+
   private async requestCancelOrder(paymentKey: string, cancelReason: string) {
     try {
-      await this.httpService
-        .post(`https://api.tosspayments.com/v1/payments/${paymentKey}/cancel`, {
+      this.httpService.post(
+        `https://api.tosspayments.com/v1/payments/${paymentKey}/cancel`,
+        {
           cancelReason,
-        })
-        .toPromise();
+        },
+        {
+          headers: this.headersRequest,
+        },
+      );
     } catch (e) {
-      throw new HttpException('결제취소 실패', HttpStatus.AMBIGUOUS);
+      console.log(e);
     }
   }
 }
